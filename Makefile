@@ -17,8 +17,8 @@ CAN_GENERATE_TTL = true
 endif
 
 dgl:
-ifeq ($(HAVE_DGL),true)
-	$(MAKE) -C dpf/dgl
+ifeq ($(HAVE_OPENGL),true)
+	$(MAKE) -C dpf/dgl opengl
 endif
 
 plugins: dgl
@@ -41,9 +41,10 @@ tests: dgl
 
 clean:
 	$(MAKE) clean -C dgl
+	$(MAKE) clean -C dpf/dgl
 	$(MAKE) clean -C plugins/SimonPiano
 	$(MAKE) clean -C dpf/utils/lv2-ttl-generator
-	rm -rf bin build
+	rm -rf bin build dpf-widgets/opengl/*.d dpf-widgets/opengl/*.o
 
 # --------------------------------------------------------------
 
