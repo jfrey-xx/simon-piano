@@ -48,13 +48,45 @@ protected:
     */
     void onImGuiDisplay() override
     {
-        ImGui::SetNextWindowPos(ImVec2(0, 0));
-        ImGui::SetNextWindowSize(ImVec2(getWidth(), getHeight()));
 
-        ImGui::ShowDemoWindow();
+      // compute base width/height
+      double scaleFactor = getScaleFactor();
+      const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+      const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+
+      // take into account resize of window
+      double scaleWidth = getWidth() / (float) width;
+      double scaleHeight = getHeight() / (float) height;
+      if (scaleWidth < scaleHeight) {
+	scaleFactor = scaleFactor * scaleWidth;
+      }
+      else {
+	scaleFactor = scaleFactor * scaleHeight;
+	// larger than ratio, center
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+      }
+      d_stdout("w: %d, h: %d, scale: %lf, scale live: %lf", getWidth(), getHeight(), getScaleFactor(), scaleFactor);
+
+      // center window with fixed ration defined by default width and height
+      ImGui::SetNextWindowPos(ImVec2((getWidth() - DISTRHO_UI_DEFAULT_WIDTH * scaleFactor) /2, (getHeight() - DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor) /2));
+      ImGui::SetNextWindowSize(ImVec2(DISTRHO_UI_DEFAULT_WIDTH * scaleFactor, DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor));
+
+      // alter background color to check position
+      ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+      // we only use one window, will take all space and hide controls
+      ImGui::Begin("Demo window", NULL, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
+      ImGui::SetWindowFontScale(scaleFactor);
+      
+      ImGui::TextWrapped("Play after me!");
+
+      ImGui::End();
+      
     }
 
     // ----------------------------------------------------------------------------------------------------------------
+
+private:
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPianoUI)
 };
