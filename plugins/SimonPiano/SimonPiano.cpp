@@ -31,9 +31,10 @@ protected:
       parameter.shortName = "root";
       parameter.symbol = "rootnote";
       parameter.unit = "";
-      parameter.ranges.def = 60;
-      parameter.ranges.min = 0;
-      parameter.ranges.max = 127;
+      parameter.ranges.def = params[kRoot].def;
+      parameter.ranges.min = params[kRoot].min;
+      parameter.ranges.max = params[kRoot].max;
+      break;
 
     default:
       break;

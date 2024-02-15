@@ -27,4 +27,11 @@ enum Parameters {
     kParameterCount
 };
 
+// sharing parameters info across DSP and UI
+const ParameterRanges params[kParameterCount] =
+    {
+     ParameterRanges(60, 0, 127) // root
+    };
+
+
 #endif
