@@ -147,62 +147,68 @@ private:
     ImDrawList* draw_list = ImGui::GetWindowDrawList(); 
 
     // find number of white keys
-    float nbWhiteKeys = getNbWhiteKeys(rootKey, nbKeys);
+    int nbWhiteKeys = getNbWhiteKeys(rootKey, nbKeys);
     // in case we start or end with black, leave some padding as half a white
+    float uiNbWhiteKeys = nbWhiteKeys;
     if (!isKeyWhite(rootKey)) {
-      nbWhiteKeys += 0.5;
+      uiNbWhiteKeys += 0.5;
     } 
     if (!isKeyWhite(rootKey + nbKeys - 1)) {
-      nbWhiteKeys += 0.5;
+      uiNbWhiteKeys += 0.5;
     }
-    int nbBlackKeys = 5;
     // around keyboard, between keys -- would be same ratio for 12 notes
     ImVec2 spacing;
-    // TODO: check if only one key
-    spacing.x = size.x / (nbWhiteKeys + 1) * 0.1f;
+    spacing.x = size.x / (uiNbWhiteKeys + 1) * 0.1f;
     spacing.y = size.y / 7 * 0.1f;
-    // TODO: check if no white key
     ImVec2 whiteKeySize;
-    whiteKeySize.x = (size.x  - spacing.x * (nbWhiteKeys + 1)) / nbWhiteKeys;
+    whiteKeySize.x = (size.x  - spacing.x * (uiNbWhiteKeys + 1)) / uiNbWhiteKeys;
     // whole height except margin
     whiteKeySize.y = size.y - spacing.y * 2;
     ImVec2 blackKeySize;
     blackKeySize.x = (whiteKeySize.x - 2 * spacing.x) * 0.4;
     blackKeySize.y = whiteKeySize.y * 0.4;
+    // background area for black keys
+    ImVec2 blackBackgroundSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
 
-    ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 0.5f)); 
-    // temp info for current key
-    ImU32 colKey;
-    ImVec2 sizeKey;
-    int note;
-    // base position for current key
-    ImVec2 curPos = pos + spacing;
-    if (!isKeyWhite(rootKey)) {
-      curPos.x += whiteKeySize.x * 0.5;
-    }
+    ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); 
+    ImU32 colBlackKey = ImColor(ImVec4(0.0f, 0.0f, 0.0f, 1.0f)); 
+    ImU32 colWhiteKey = ImColor(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
 
     // draw the background
-    //draw_list->AddRectFilled(pos, pos + size, colBackground);
-    draw_list->AddRectFilled(pos, pos + size, ImColor(ImVec4(0.0f, 1.0f, 0.0f, 0.5f))); 
+    draw_list->AddRectFilled(pos, pos + size, colBackground);
 
-    for (int i = 0; i < nbKeys; i++) { 
-      note = i + rootKey;
-      if (isKeyWhite(note)) {
-	colKey = ImColor(ImVec4((float) i / nbKeys, 1.0f, 1.0f, 0.5f)); 
-	draw_list->AddRectFilled(curPos, curPos + whiteKeySize, colKey);
-	// only advance between white keys, we should not have consecutive black keys
-	curPos.x += whiteKeySize.x + spacing.x;
+    // base position for current key
+    ImVec2 startPos = pos + spacing;
+    // shift if we start with black key
+    if (!isKeyWhite(rootKey)) {
+      startPos.x += whiteKeySize.x * 0.5;
+    }
+    ImVec2 curPos(startPos);
+
+    // first draw white keys
+    for (int i = 0; i < nbWhiteKeys; i++) { 
+      draw_list->AddRectFilled(curPos, curPos + whiteKeySize, colWhiteKey);
+      // only advance between white keys, we should not have consecutive black keys
+      curPos.x += whiteKeySize.x + spacing.x;
+    }
+    // black on top
+    curPos = startPos;
+    uint note = rootKey;
+    for (uint i = 0; i < nbKeys; i++) { 
+      // skip white keys, just advance
+      if(isKeyWhite(note)) {
+      curPos.x += whiteKeySize.x + spacing.x;
       }
       else {
-	colKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 0.5f)); 
 	// for black key, first we have to draw the background for spacing
 	ImVec2 tmpPos = curPos;
 	tmpPos.x = curPos.x - spacing.x / 2 - blackKeySize.x / 2 - spacing.x;
 	ImVec2 tmpSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
-	draw_list->AddRectFilled(tmpPos, tmpPos + tmpSize , colBackground);
+	draw_list->AddRectFilled(tmpPos, tmpPos + blackBackgroundSize , colBackground);
 	tmpPos.x += spacing.x;
-	draw_list->AddRectFilled(tmpPos, tmpPos + blackKeySize, colKey);
+	draw_list->AddRectFilled(tmpPos, tmpPos + blackKeySize, colBlackKey);
       }
+      note++;
     }
   }
 
