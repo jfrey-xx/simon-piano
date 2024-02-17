@@ -10,6 +10,19 @@ bool isKeyWhite(uint note) {
   return (note == 0 or note == 2 or note == 4 or note == 5 or note == 7 or note == 9 or note == 11);
 }
 
+// return the number of white keys for that many notes starting from root
+uint getNbWhiteKeys(uint rootKey, uint nbKeys) {
+  // stick to one simple case when root is C
+  if (rootKey % 12 == 0) {
+    if (nbKeys % 12 <= 4) {
+      return ceil((nbKeys % 12 ) / (float) 2) + nbKeys / 12 * 7;
+    }
+    return ceil((nbKeys % 12 + 1) / (float) 2) + nbKeys / 12 * 7;
+  }
+  // otherwise, compute compared to simple case -- for sure there is a more clever way but is eludes me today
+  return getNbWhiteKeys(0, nbKeys + rootKey % 12) - getNbWhiteKeys(0, rootKey % 12);
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 
 class SimonPianoUI : public UI
@@ -79,7 +92,6 @@ protected:
 	// larger than ratio, center
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
       }
-      d_stdout("w: %d, h: %d, scale: %lf, scale live: %lf", getWidth(), getHeight(), getScaleFactor(), scaleFactor);
 
       // center window with fixed ration defined by default width and height
       ImGui::SetNextWindowPos(ImVec2((getWidth() - DISTRHO_UI_DEFAULT_WIDTH * scaleFactor) /2, (getHeight() - DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor) /2));
@@ -103,14 +115,15 @@ protected:
 	root = uiRoot;
 	setParameterValue(kRoot, uiRoot);
       }
-
       ImGui::Spacing();
+
+      // up to three octaves
+      ImGui::SliderInt("Number of keys", &uiNbKeys, 0, 36);
 
       // draw next to current position
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
-      d_stdout("px: %f, py: %f", p.x, p.y);
       const ImVec2 keyboardSize(400 * scaleFactor, 200 * scaleFactor);
-      drawPiano(p, keyboardSize, root);
+      drawPiano(p, keyboardSize, root, uiNbKeys);
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
       ImGui::Spacing();
@@ -125,16 +138,18 @@ protected:
 private:
   // parameters sync with DSP
   int root = params[kRoot].def;
+  int uiNbKeys = 12;
 
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
   // size: size of the widget
-  void drawPiano(ImVec2 pos, ImVec2 size, uint rootKey) {
+  void drawPiano(ImVec2 pos, ImVec2 size, uint rootKey, uint nbKeys) {
     ImDrawList* draw_list = ImGui::GetWindowDrawList(); 
-    int nbKeys = 12;
-    float nbWhiteKeys = 7;
+
+    // find number of white keys
+    float nbWhiteKeys = getNbWhiteKeys(rootKey, nbKeys);
     // in case we start or end with black, leave some padding as half a white
-    if (!isKeyWhite(rootKey) or !isKeyWhite(rootKey + nbKeys - 1)) {
+    if (!isKeyWhite(rootKey)) {
       nbWhiteKeys += 0.5;
     } 
     if (!isKeyWhite(rootKey + nbKeys - 1)) {
@@ -181,7 +196,6 @@ private:
       else {
 	colKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 0.5f)); 
 	// for black key, first we have to draw the background for spacing
-
 	ImVec2 tmpPos = curPos;
 	tmpPos.x = curPos.x - spacing.x / 2 - blackKeySize.x / 2 - spacing.x;
 	ImVec2 tmpSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
