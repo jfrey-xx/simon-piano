@@ -42,7 +42,7 @@ protected:
     // DSP/Plugin Callbacks
 
    /**
-      A parameter has changed on the plugin side.@n
+      A parameter has changed on the *plugin side*.@n
       This is called by the host to inform the UI about parameter changes.
     */
     void parameterChanged(uint32_t index, float value) override {
@@ -96,11 +96,11 @@ protected:
       ImGui::TextWrapped("Play after me!");
 
       // sync root note
-      static int uiRoot;
-      uiRoot = root;
+      int uiRoot = root;
       ImGui::SliderInt("Root note", &uiRoot, params[kRoot].min, params[kRoot].max);
       // only send value if updated
       if (uiRoot != root) {
+	root = uiRoot;
 	setParameterValue(kRoot, uiRoot);
       }
 
@@ -110,7 +110,7 @@ protected:
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
       d_stdout("px: %f, py: %f", p.x, p.y);
       const ImVec2 keyboardSize(400 * scaleFactor, 200 * scaleFactor);
-      drawPiano(p, keyboardSize);
+      drawPiano(p, keyboardSize, root);
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
       ImGui::Spacing();
@@ -129,9 +129,8 @@ private:
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
   // size: size of the widget
-  void drawPiano(ImVec2 pos, ImVec2 size) {
+  void drawPiano(ImVec2 pos, ImVec2 size, uint rootKey) {
     ImDrawList* draw_list = ImGui::GetWindowDrawList(); 
-    int rootKey = 60; 
     int nbKeys = 12;
     int nbWhiteKeys = 7;
     int nbBlackKeys = 5;
