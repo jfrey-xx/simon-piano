@@ -3,6 +3,13 @@
 
 START_NAMESPACE_DISTRHO
 
+// return true if the key for this note is C, D, E, F, G, A, B
+bool isKeyWhite(uint note) {
+  // only twelve note
+  note = note % 12;
+  return (note == 0 or note == 2 or note == 4 or note == 5 or note == 7 or note == 9 or note == 11);
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 
 class SimonPianoUI : public UI
@@ -97,6 +104,18 @@ protected:
 	setParameterValue(kRoot, uiRoot);
       }
 
+      ImGui::Spacing();
+
+      // draw next to current position
+      const ImVec2 p = ImGui::GetCursorScreenPos(); 
+      d_stdout("px: %f, py: %f", p.x, p.y);
+      const ImVec2 keyboardSize(400 * scaleFactor, 200 * scaleFactor);
+      drawPiano(p, keyboardSize);
+      // move along
+      ImGui::SetCursorScreenPos(p + keyboardSize) ;
+      ImGui::Spacing();
+      ImGui::TextWrapped("Lalala");
+
       ImGui::End();
       
     }
@@ -106,6 +125,63 @@ protected:
 private:
   // parameters sync with DSP
   int root = params[kRoot].def;
+
+  // drawing a very simple keyboard using imgui, fetching drawList
+  // pos: upper left corner of the widget
+  // size: size of the widget
+  void drawPiano(ImVec2 pos, ImVec2 size) {
+    ImDrawList* draw_list = ImGui::GetWindowDrawList(); 
+    int rootKey = 60; 
+    int nbKeys = 12;
+    int nbWhiteKeys = 7;
+    int nbBlackKeys = 5;
+    // around keyboard, between keys -- would be same ratio for 12 notes
+    ImVec2 spacing;
+    // TODO: check if only one key
+    spacing.x = size.x / (nbWhiteKeys + 1) * 0.1f;
+    spacing.y = size.y / 7 * 0.1f;
+    // TODO: check if no white key
+    ImVec2 whiteKeySize;
+    whiteKeySize.x = (size.x  - spacing.x * (nbWhiteKeys + 1)) / nbWhiteKeys;
+    // whole height except margin
+    whiteKeySize.y = size.y - spacing.y * 2;
+    ImVec2 blackKeySize;
+    blackKeySize.x = (whiteKeySize.x - 2 * spacing.x) * 0.4;
+    blackKeySize.y = whiteKeySize.y * 0.4;
+
+    ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 0.5f)); 
+    // temp info for current key
+    ImU32 colKey;
+    ImVec2 sizeKey;
+    int note;
+    // base position for current key
+    ImVec2 curPos = pos + spacing;
+
+    // draw the background
+    //draw_list->AddRectFilled(pos, pos + size, colBackground);
+    draw_list->AddRectFilled(pos, pos + size, ImColor(ImVec4(0.0f, 1.0f, 0.0f, 0.5f))); 
+
+    for (int i = 0; i < nbKeys; i++) { 
+      note = i + rootKey;
+      if (isKeyWhite(note)) {
+	colKey = ImColor(ImVec4((float) i / nbKeys, 1.0f, 1.0f, 0.5f)); 
+	draw_list->AddRectFilled(curPos, curPos + whiteKeySize, colKey);
+	// only advance between white keys, we should not have consecutive black keys
+	curPos.x += whiteKeySize.x + spacing.x;
+      }
+      else {
+	colKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 0.5f)); 
+	// for black key, first we have to draw the background for spacing
+
+	ImVec2 tmpPos = curPos;
+	tmpPos.x = curPos.x - spacing.x / 2 - blackKeySize.x / 2 - spacing.x;
+	ImVec2 tmpSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
+	draw_list->AddRectFilled(tmpPos, tmpPos + tmpSize , colBackground);
+	tmpPos.x += spacing.x;
+	draw_list->AddRectFilled(tmpPos, tmpPos + blackKeySize, colKey);
+      }
+    }
+  }
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPianoUI)
 };
