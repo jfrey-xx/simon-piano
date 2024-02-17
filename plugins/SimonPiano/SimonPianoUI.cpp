@@ -132,7 +132,14 @@ private:
   void drawPiano(ImVec2 pos, ImVec2 size, uint rootKey) {
     ImDrawList* draw_list = ImGui::GetWindowDrawList(); 
     int nbKeys = 12;
-    int nbWhiteKeys = 7;
+    float nbWhiteKeys = 7;
+    // in case we start or end with black, leave some padding as half a white
+    if (!isKeyWhite(rootKey) or !isKeyWhite(rootKey + nbKeys - 1)) {
+      nbWhiteKeys += 0.5;
+    } 
+    if (!isKeyWhite(rootKey + nbKeys - 1)) {
+      nbWhiteKeys += 0.5;
+    }
     int nbBlackKeys = 5;
     // around keyboard, between keys -- would be same ratio for 12 notes
     ImVec2 spacing;
@@ -155,6 +162,9 @@ private:
     int note;
     // base position for current key
     ImVec2 curPos = pos + spacing;
+    if (!isKeyWhite(rootKey)) {
+      curPos.x += whiteKeySize.x * 0.5;
+    }
 
     // draw the background
     //draw_list->AddRectFilled(pos, pos + size, colBackground);
