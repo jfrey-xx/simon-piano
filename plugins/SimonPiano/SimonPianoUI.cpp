@@ -60,9 +60,6 @@ protected:
     */
     void parameterChanged(uint32_t index, float value) override {
       switch (index) {
-      case kStart:
-	start = value;
-	break;
       case kEffectiveRoot:
 	root = value;
 	break;
@@ -116,15 +113,47 @@ protected:
       ImGui::Begin("Demo window", NULL, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
       // scale UI
       ImGui::SetWindowFontScale(scaleFactor);
-      
-      ImGui::TextWrapped("Play after me!");
+
+      switch (status) {
+      case WAITING:
+	ImGui::TextWrapped("Press start for a new game.");
+	break;
+      case STARTING:
+	ImGui::TextWrapped("Pay attention...");
+	break;
+      case INSTRUCTIONS:
+	ImGui::TextWrapped("Play after me!");
+	break;
+	break;
+      case PLAYING_WAIT:
+      case PLAYING_CORRECT:
+      case PLAYING_INCORRECT:
+      case PLAYING_OVER:
+	ImGui::TextWrapped("Your turn!");
+	break;
+	ImGui::TextWrapped("Your turn!");
+	break;
+      default:
+	ImGui::TextWrapped("Play after me!");
+	break;
+      }
+
+      // --- disable part of the UI during game ---
+      if (isRunning(status)) {
+	ImGui::BeginDisabled();
+      }
+      if (ImGui::Button("Start")) {
+	d_stdout("button click");
+	// send false/true cylce to make sure to toggle
+	setParameterValue(kStart, false);
+	setParameterValue(kStart, true);
+      }
 
       // sync root note
       int uiRoot = root;
       ImGui::SliderInt("Root note", &uiRoot, params[kRoot].min, params[kRoot].max);
-      // only send value if updated
+      // only send value if updated -- and might not be taken into account if game is running
       if (uiRoot != root) {
-	root = uiRoot;
 	setParameterValue(kRoot, uiRoot);
       }
       ImGui::Spacing();
@@ -133,14 +162,17 @@ protected:
       int uiNbNotes = nbNotes;
       ImGui::SliderInt("Number of keys", &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
       if (uiNbNotes != nbNotes) {
-	nbNotes = uiNbNotes;
 	setParameterValue(kNbNotes, uiNbNotes);
+      }
+      // --- end disable part of the UI during game ---
+      if (isRunning(status)) {
+	ImGui::EndDisabled();
       }
 
       // draw next to current position
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
       const ImVec2 keyboardSize(400 * scaleFactor, 200 * scaleFactor);
-      drawPiano(p, keyboardSize, root, uiNbNotes);
+      drawPiano(p, keyboardSize, root, nbNotes);
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
       ImGui::Spacing();
@@ -154,7 +186,6 @@ protected:
 
 private:
   // parameters sync with DSP
-  bool start = false;
   int status = params[kStatus].def;
   int root = params[kRoot].def;
   int nbNotes = params[kNbNotes].def;

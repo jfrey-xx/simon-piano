@@ -3,10 +3,16 @@
 
 START_NAMESPACE_DISTRHO
 
+// time in seconds between notes for instructions (and before first instruction)
+#define NOTE_INTERVAL 1
+// how long each note is held during instruction
+#define NOTE_DURATION 1
+
 class SimonPiano : public ExtendedPlugin {
 public:
   // Note: do not care with default values since we will sent all parameters upon init
   SimonPiano() : ExtendedPlugin(kParameterCount, 0, 0) {
+    reset();
   }
 
 protected:
@@ -98,6 +104,17 @@ protected:
       parameter.ranges.min = params[kCurNote].min;
       parameter.ranges.max = params[kCurNote].max;
       break;
+    case kRound:
+      // what round we are at
+      parameter.hints = kParameterIsInteger | kParameterIsOutput;
+      parameter.name = "Round number";
+      parameter.shortName = "round";
+      parameter.symbol = "round";
+      parameter.unit = "";
+      parameter.ranges.def = params[kRound].def;
+      parameter.ranges.min = params[kRound].min;
+      parameter.ranges.max = params[kRound].max;
+      break;
 
     default:
       break;
@@ -136,9 +153,8 @@ protected:
       // only effectively start if waiting for it
       if (start == false && value != start) {
         d_stdout("new start");
-        if (status == WAITING || status == GAMEOVER) {
-          d_stdout("new game");
-          status = STARTING;
+        if (!isRunning(status)) {
+          newGame();
         }
       }
       start = value;
@@ -164,39 +180,183 @@ protected:
     }
   }
 
-  // callbacks for processing MIDI
-  void noteOn(uint8_t note, uint8_t, uint8_t channel, uint32_t frame) {
+  // user playing notes, keep channel and velocity for user
+  void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
     d_stdout("NoteOn %d, channel %d, frame %d", note, channel, frame);
+    // only pass through during playing, keep all info
+    if (isPlaying(status)) {
+      d_stdout("pass it");
+      // disable any currently playing note -- i.e. monophonic
+      if (curNote >= 0) {
+        d_stdout("kill previous note %d", curNote);
+        sendNoteOff(curNote, channel, frame);
+      }
+      sendNoteOn(note, velocity, channel, frame);
+      curNote = note;
+      if (playN < MAX_ROUND && curNote == sequence[playN]) {
+        d_stdout("correct");
+        status = PLAYING_CORRECT;
+      }
+      else {
+        d_stdout("incorrect");
+        status = PLAYING_INCORRECT;
+      }
+      playN++;
+      if ((int) playN >= round) {
+        d_stdout("playing over");
+        status = PLAYING_OVER;
+      }
+    }      
   }
 
   void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
     d_stdout("NoteOff %d, channel %d, frame %d", note, channel, frame);
-  }
-
-  void drawNote() {
-  }
-
-  void process(uint32_t nbSamples, uint32_t /*frame*/) {
-    // sync state
-    if (status == WAITING || status == GAMEOVER) {
-      if (effectiveNbNotes != nbNotes) {
-        setParameterValue(kEffectiveNbNotes, nbNotes);
+    if (isPlaying(status) || status == PLAYING_OVER) {
+      d_stdout("pass it");
+      sendNoteOff(note, channel, frame);
+      curNote = -1;
+      if (isPlaying(status)) {
+        status = PLAYING_WAIT;
       }
+      // PLAYING_OVER, time for new round
+      else {
+        newRound();
+      }
+    }
+  }
+
+  void newGame() {
+    d_stdout("new game");
+    reset();
+    status = STARTING;
+    // reset counters
+    lastTime = curTime;
+    round = 0;
+  }
+
+  // starting new instructions
+  void newRound() {
+    d_stdout("new round");
+    status = INSTRUCTIONS;
+    instructionN = 0;
+    playN = 0;
+    // draw another note
+    addNote();
+    // reset counters
+    lastTime = curTime;
+    // increase round last, sequence < round
+    round++;
+  }
+
+  // draw another note to the sequence
+  void addNote() {
+    if (round >= MAX_ROUND) {
+      d_stdout("max round reached!");
+      status = GAMEOVER;
+    }
+    else if (round >= 0) {
+      // TODO
+      sequence[round] = effectiveRoot + round;
+    }
+  }
+
+  // playing next note in the sequence
+  // frame: frame of the event in the buffer
+  void nextNote(uint32_t frame=0) {
+    d_stdout("instruction %d", instructionN);
+    // reached end of sequence, user's turn 
+    if((int) instructionN >= round) {
+      d_stdout("instruction reached sequence");
+      status = PLAYING_WAIT;
+    }
+    else if (instructionN < MAX_ROUND) {
+      curNote = sequence[instructionN];
+      d_stdout("next note %d", curNote);
+      if (curNote >= 0) {
+        // full velocity and first channel by default
+        sendNoteOn(curNote, 127, 0, frame);
+        instructionN++;
+      }
+    }
+  }
+
+  // turning off current instruction note
+  // frame: frame of the event in the buffer
+  void endNote(uint32_t frame=0) {
+    d_stdout("end note %d", curNote);
+    if (curNote >= 0) {
+      // first channel by default
+      sendNoteOff(curNote, 0, frame);
+      curNote = -1;
+    }
+  }
+
+  void process(uint32_t nbSamples, uint32_t frame) {
+    // in-between games, sync state
+    if (!isRunning(status)) {
       if (effectiveRoot != root) {
         setParameterValue(kEffectiveRoot, root);
       }
+      // limit number of notes depending on root position
+      int maxNotes = params[kNbNotes].max - effectiveRoot;
+      if (nbNotes > maxNotes) {
+        setParameterValue(kEffectiveNbNotes, maxNotes);
+      }
+      else {
+        setParameterValue(kEffectiveNbNotes, nbNotes);
+      }
     }
 
-      for (uint32_t i = 0; i < nbSamples; i++) {
-       curTime +=  1./ getSampleRate();
-        // ping every second
-        if (curTime - lastTime >= 1.0) {
-          d_stdout("tick, time: %lf", curTime);
-          lastTime += 1.0;
+    // update time
+    for (uint32_t i = 0; i < nbSamples; i++) {
+      curTime +=  1./ getSampleRate();
+      double elapsedTime = curTime - lastTime;
+
+      switch(status) {
+      // pause before real start
+      case STARTING:
+        if (elapsedTime >= NOTE_INTERVAL) {
+          newRound();
         }
+        break;
+      // displaying example
+      case INSTRUCTIONS:
+        // displaying note, wait to turn it off
+        if (curNote >= 0) {
+          if (elapsedTime >= NOTE_DURATION) {
+            d_stdout("turn off note");
+            lastTime = curTime;
+            endNote(frame + i);
+          }
+        }
+        // test if we should start new note
+        else {
+          if (elapsedTime >= NOTE_INTERVAL) {
+            d_stdout("go note");
+            lastTime = curTime;
+            nextNote(frame + i);
+          }
+        }
+          break;
+      default:
+        break;
       }
+    }
 
   };
+
+  // reset inner state upon new game
+  void reset() {
+    d_stdout("reset");
+    // init array
+    for (int i = 0; i < MAX_ROUND; i++) {
+      sequence[i] = -1;
+    }
+    setParameterValue(kCurNote, -1);
+    round = 0;
+    instructionN = 0;
+    playN = 0;
+  }
 
 private:
   // parameters
@@ -207,9 +367,18 @@ private:
   int effectiveRoot =  params[kEffectiveRoot].def;
   int effectiveNbNotes =  params[kEffectiveNbNotes].def;
   int curNote = params[kCurNote].def;
+  // current round number
+  int round = params[kRound].def;
   // for computing time based on frame count
   double curTime = 0;
   double lastTime = 0;
+  // sequence of notes for this round
+  int sequence[MAX_ROUND];
+  // where in the sequence the instruction is at
+  uint instructionN = 0;
+  // where in the sequence the player is at
+  uint playN = 0;
+
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPiano);
 };
