@@ -22,16 +22,40 @@
 #define DISTRHO_UI_URI DISTRHO_PLUGIN_URI "#UI"
 
 enum Parameters {
+    kStart,
     kRoot, 
+    kNbNotes,
+    // root and nb notes are not applied during game
+    kEffectiveRoot,
+    kEffectiveNbNotes,
+    kStatus,
+    kCurNote,
 
     kParameterCount
 };
 
-// sharing parameters info across DSP and UI
+enum Status {
+                WAITING,
+                STARTING,
+                INSTRUCTIONS,
+                TYPING_CORRECT,
+                TYPING_INCORRECT,
+                GAMEOVER,
+
+                STATUS_COUNT
+};
+
+// sharing parameters info across DSP and UI.
 const ParameterRanges params[kParameterCount] =
     {
-     ParameterRanges(60, 0, 127) // root
+     // default, min, max.
+     ParameterRanges(0, 0, 1), // start
+     ParameterRanges(60, 0, 127), // root
+     ParameterRanges(12, 0, 127), // number of notes
+     ParameterRanges(60, 0, 127), // effective root
+     ParameterRanges(12, 0, 127), // effective number of notes
+     ParameterRanges(WAITING, 0, STATUS_COUNT), // status
+     ParameterRanges(-1, -1, 127), // current active note
     };
-
 
 #endif

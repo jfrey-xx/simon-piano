@@ -60,8 +60,20 @@ protected:
     */
     void parameterChanged(uint32_t index, float value) override {
       switch (index) {
-      case kRoot:
+      case kStart:
+	start = value;
+	break;
+      case kEffectiveRoot:
 	root = value;
+	break;
+      // only taking into account what is currently used in the DSP for UI
+      case kEffectiveNbNotes:
+	nbNotes = value;
+	break;
+      case kStatus:
+	status = value;
+	break;
+
       default:
 	break;
       }
@@ -117,13 +129,18 @@ protected:
       }
       ImGui::Spacing();
 
-      // up to three octaves
-      ImGui::SliderInt("Number of keys", &uiNbKeys, 0, 36);
+      // same for number of notes/keys
+      int uiNbNotes = nbNotes;
+      ImGui::SliderInt("Number of keys", &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
+      if (uiNbNotes != nbNotes) {
+	nbNotes = uiNbNotes;
+	setParameterValue(kNbNotes, uiNbNotes);
+      }
 
       // draw next to current position
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
       const ImVec2 keyboardSize(400 * scaleFactor, 200 * scaleFactor);
-      drawPiano(p, keyboardSize, root, uiNbKeys);
+      drawPiano(p, keyboardSize, root, uiNbNotes);
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
       ImGui::Spacing();
@@ -137,8 +154,11 @@ protected:
 
 private:
   // parameters sync with DSP
+  bool start = false;
+  int status = params[kStatus].def;
   int root = params[kRoot].def;
-  int uiNbKeys = 12;
+  int nbNotes = params[kNbNotes].def;
+  int curNote = params[kCurNote].def;
 
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
