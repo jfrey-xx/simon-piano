@@ -180,11 +180,11 @@ protected:
     }
   }
 
-  // user playing notes, keep channel and velocity for user
+  // user playing notes, keep channel and velocity for user during pass-through
   void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
     d_stdout("NoteOn %d, channel %d, frame %d", note, channel, frame);
-    // only pass through during playing, keep all info
-    if (isPlaying(status)) {
+    // only pass through during playing until last note, keep all info
+    if (isPlaying(status) && (int) playN < round) {
       d_stdout("pass it");
       // disable any currently playing note -- i.e. monophonic
       if (curNote >= 0) {
@@ -202,24 +202,20 @@ protected:
         status = PLAYING_INCORRECT;
       }
       playN++;
-      if ((int) playN >= round) {
-        d_stdout("playing over");
-        status = PLAYING_OVER;
-      }
     }      
   }
 
+  // will detect new round upon note off of last playing
   void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
     d_stdout("NoteOff %d, channel %d, frame %d", note, channel, frame);
-    if (isPlaying(status) || status == PLAYING_OVER) {
+    if (isPlaying(status)) {
       d_stdout("pass it");
       sendNoteOff(note, channel, frame);
       curNote = -1;
-      if (isPlaying(status)) {
-        status = PLAYING_WAIT;
-      }
-      // PLAYING_OVER, time for new round
-      else {
+      status = PLAYING_WAIT;
+      // time for new round
+      if ((int) playN >= round) {
+        d_stdout("playing over");
         newRound();
       }
     }
@@ -295,15 +291,15 @@ protected:
     // in-between games, sync state
     if (!isRunning(status)) {
       if (effectiveRoot != root) {
-        setParameterValue(kEffectiveRoot, root);
+        effectiveRoot = root;
       }
       // limit number of notes depending on root position
       int maxNotes = params[kNbNotes].max - effectiveRoot;
       if (nbNotes > maxNotes) {
-        setParameterValue(kEffectiveNbNotes, maxNotes);
+        effectiveNbNotes = maxNotes;
       }
       else {
-        setParameterValue(kEffectiveNbNotes, nbNotes);
+        effectiveNbNotes = nbNotes;
       }
     }
 

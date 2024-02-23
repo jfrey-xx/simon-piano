@@ -45,8 +45,6 @@ enum Status {
                 PLAYING_WAIT,
                 PLAYING_CORRECT,
                 PLAYING_INCORRECT,
-                PLAYING_OVER, // wait for note off before next phase
-                ROUND_ENDING, // wait for note off before next phase
                 GAMEOVER,
 
                 STATUS_COUNT

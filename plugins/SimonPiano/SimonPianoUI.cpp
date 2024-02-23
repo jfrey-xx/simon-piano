@@ -70,6 +70,9 @@ protected:
       case kStatus:
 	status = value;
 	break;
+      case kCurNote:
+	curNote = value;
+	break;
 
       default:
 	break;
@@ -128,7 +131,6 @@ protected:
       case PLAYING_WAIT:
       case PLAYING_CORRECT:
       case PLAYING_INCORRECT:
-      case PLAYING_OVER:
 	ImGui::TextWrapped("Your turn!");
 	break;
 	ImGui::TextWrapped("Your turn!");
@@ -224,6 +226,9 @@ private:
     ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); 
     ImU32 colBlackKey = ImColor(ImVec4(0.0f, 0.0f, 0.0f, 1.0f)); 
     ImU32 colWhiteKey = ImColor(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+    ImU32 colInstructionKey = ImColor(ImVec4(0.0f, 0.0f, 1.0f, 1.0f)); 
+    ImU32 colCorrectKey = ImColor(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); 
+    ImU32 colIncorrectKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); 
 
     // draw the background
     draw_list->AddRectFilled(pos, pos + size, colBackground);
@@ -235,29 +240,72 @@ private:
       startPos.x += whiteKeySize.x * 0.5;
     }
     ImVec2 curPos(startPos);
+    ImU32 colCurKey;
 
     // first draw white keys
-    for (int i = 0; i < nbWhiteKeys; i++) { 
-      draw_list->AddRectFilled(curPos, curPos + whiteKeySize, colWhiteKey);
-      // only advance between white keys, we should not have consecutive black keys
-      curPos.x += whiteKeySize.x + spacing.x;
+    uint note = rootKey;
+    for (uint i = 0; i < nbKeys; i++) { 
+      if(isKeyWhite(note)) {
+	colCurKey = colWhiteKey;
+	// this note currently active, special color
+	if ((int)note == curNote) {
+	  switch(status) {
+	  case INSTRUCTIONS:
+	    colCurKey = colInstructionKey;
+	    break;
+	  case PLAYING_CORRECT:
+	    colCurKey = colCorrectKey;
+	    break;
+	  case PLAYING_INCORRECT:
+	    colCurKey = colIncorrectKey;
+	    break;
+	  default:
+	    // debug
+	    colCurKey = ImColor(ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+	    break;
+	  }
+	}
+	draw_list->AddRectFilled(curPos, curPos + whiteKeySize, colCurKey);
+	// only advance between white keys, we should not have consecutive black keys
+	curPos.x += whiteKeySize.x + spacing.x;
+      }
+      note++;
     }
     // black on top
     curPos = startPos;
-    uint note = rootKey;
+    note = rootKey;
     for (uint i = 0; i < nbKeys; i++) { 
       // skip white keys, just advance
       if(isKeyWhite(note)) {
-      curPos.x += whiteKeySize.x + spacing.x;
+	curPos.x += whiteKeySize.x + spacing.x;
       }
       else {
+	colCurKey = colBlackKey;
+	// this note currently active, special color
+	if ((int)note == curNote) {
+	  switch(status) {
+	  case INSTRUCTIONS:
+	    colCurKey = colInstructionKey;
+	    break;
+	  case PLAYING_CORRECT:
+	    colCurKey = colCorrectKey;
+	    break;
+	  case PLAYING_INCORRECT:
+	    colCurKey = colIncorrectKey;
+	    break;
+	  default:
+	    // debug
+	    colCurKey = ImColor(ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+	    break;
+	  }
+	}
 	// for black key, first we have to draw the background for spacing
 	ImVec2 tmpPos = curPos;
 	tmpPos.x = curPos.x - spacing.x / 2 - blackKeySize.x / 2 - spacing.x;
 	ImVec2 tmpSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
 	draw_list->AddRectFilled(tmpPos, tmpPos + blackBackgroundSize , colBackground);
 	tmpPos.x += spacing.x;
-	draw_list->AddRectFilled(tmpPos, tmpPos + blackKeySize, colBlackKey);
+	draw_list->AddRectFilled(tmpPos, tmpPos + blackKeySize, colCurKey);
       }
       note++;
     }

@@ -8,3 +8,4 @@ During instructions defaults to first MIDI channel and full velocity, while play
 # TODO
 
 - configurable "jokers", can have one error every xx note
+- debounce for MIDI input?
