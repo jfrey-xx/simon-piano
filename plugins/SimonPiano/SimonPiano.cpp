@@ -193,7 +193,7 @@ protected:
       }
       sendNoteOn(note, velocity, channel, frame);
       curNote = note;
-      if (playN < MAX_ROUND && curNote == sequence[playN]) {
+      if (playN < MAX_ROUND && isCorrespondingNote(curNote, sequence[playN], root, nbNotes)) {
         d_stdout("correct");
         status = PLAYING_CORRECT;
       }

@@ -248,7 +248,7 @@ private:
       if(isKeyWhite(note)) {
 	colCurKey = colWhiteKey;
 	// this note currently active, special color
-	if ((int)note == curNote) {
+	if (isCorrespondingNote((int)note, curNote, root, nbNotes)) {
 	  switch(status) {
 	  case INSTRUCTIONS:
 	    colCurKey = colInstructionKey;
@@ -282,7 +282,7 @@ private:
       else {
 	colCurKey = colBlackKey;
 	// this note currently active, special color
-	if ((int)note == curNote) {
+	if (isCorrespondingNote((int)note, curNote, root, nbNotes)) {
 	  switch(status) {
 	  case INSTRUCTIONS:
 	    colCurKey = colInstructionKey;
