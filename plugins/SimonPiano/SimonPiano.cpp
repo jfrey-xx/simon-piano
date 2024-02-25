@@ -180,11 +180,44 @@ protected:
     }
   }
 
-  // user playing notes, keep channel and velocity for user during pass-through
+  void abortCurrentNote(uint32_t frame=0) {
+    if (curNote >= 0) {
+      d_stdout("kill previous note %d at channel %d", curNote, curChannel);
+      sendNoteOff(curNote, curChannel, frame);
+    }
+  }
+
+  // shift input, considering the current root note and the interval (number of notes) on interest
+  int shiftNote(int note) {
+    // round number of notes to next octave
+    int interval = ceil(effectiveNbNotes / (float) 12) * 12;
+    // we seek position in interval
+    note = (note - effectiveRoot) % interval;
+    // % is remainder in C, not modulo, adapt
+    if (note < 0) {
+      note += interval;
+    }
+    // shift back compared to root
+    return note + effectiveRoot;
+  }
+
+  // user playing notes, shifting note to interval of interest.  keep channel and velocity for user during pass-through
   void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
     d_stdout("NoteOn %d, channel %d, frame %d", note, channel, frame);
+    // Tries to be as smart as possible, if the input note is out of range consider that the position is just shifted (user might not have the correct octave configured)
+    note = shiftNote(note); 
+    
+    // while the game is not running we can hit notes to try-out
+    if (!isRunning(status)) {
+      d_stdout("not running, pass it");
+      // disable any currently playing note -- i.e. monophonic
+      abortCurrentNote(frame);
+      sendNoteOn(note, velocity, channel, frame);
+      curNote = note;
+      curChannel = channel;
+    }
     // only pass through during playing until last note, keep all info
-    if (isPlaying(status) && (int) playN < round) {
+    else if (isPlaying(status) && (int) playN < round) {
       d_stdout("pass it");
       // disable any currently playing note -- i.e. monophonic
       if (curNote >= 0) {
@@ -193,7 +226,8 @@ protected:
       }
       sendNoteOn(note, velocity, channel, frame);
       curNote = note;
-      if (playN < MAX_ROUND && isCorrespondingNote(curNote, sequence[playN], root, nbNotes)) {
+      curChannel = channel;
+      if (playN < MAX_ROUND && curNote == sequence[playN]) {
         d_stdout("correct");
         status = PLAYING_CORRECT;
       }
@@ -208,7 +242,17 @@ protected:
   // will detect new round upon note off of last playing
   void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
     d_stdout("NoteOff %d, channel %d, frame %d", note, channel, frame);
-    if (isPlaying(status)) {
+    // shift here is well
+    note = shiftNote(note);
+
+    // do not change status in-between games, just pass-through note off events
+    if (!isRunning(status)) {
+      d_stdout("not running, pass it");
+      curNote = -1;
+      sendNoteOff(note, channel, frame);
+    }
+    // while playing check if round is over
+    else if (isPlaying(status)) {
       d_stdout("pass it");
       sendNoteOff(note, channel, frame);
       curNote = -1;
@@ -269,8 +313,9 @@ protected:
       curNote = sequence[instructionN];
       d_stdout("next note %d", curNote);
       if (curNote >= 0) {
-        // full velocity and first channel by default
-        sendNoteOn(curNote, 127, 0, frame);
+        // first channel and full velocity by default
+        curChannel = 0;
+        sendNoteOn(curNote, 127, curChannel, frame);
         instructionN++;
       }
     }
@@ -281,24 +326,27 @@ protected:
   void endNote(uint32_t frame=0) {
     d_stdout("end note %d", curNote);
     if (curNote >= 0) {
-      // first channel by default
-      sendNoteOff(curNote, 0, frame);
+      sendNoteOff(curNote, curChannel, frame);
       curNote = -1;
     }
   }
 
   void process(uint32_t nbSamples, uint32_t frame) {
     // in-between games, sync state
+    // Note: upon change on root or nbNotes we will kill any pending notes, to avoid stuck keys upon shifting
     if (!isRunning(status)) {
       if (effectiveRoot != root) {
+        abortCurrentNote(frame);
         effectiveRoot = root;
       }
       // limit number of notes depending on root position
       int maxNotes = params[kNbNotes].max - effectiveRoot;
-      if (nbNotes > maxNotes) {
+      if (nbNotes > maxNotes && effectiveNbNotes != maxNotes) {
+        abortCurrentNote(frame);
         effectiveNbNotes = maxNotes;
       }
-      else {
+      else if (effectiveNbNotes != nbNotes) {
+        abortCurrentNote(frame);
         effectiveNbNotes = nbNotes;
       }
     }
@@ -363,6 +411,8 @@ private:
   int effectiveRoot =  params[kEffectiveRoot].def;
   int effectiveNbNotes =  params[kEffectiveNbNotes].def;
   int curNote = params[kCurNote].def;
+  // associated channel, to abort note
+  int curChannel = 0;
   // current round number
   int round = params[kRound].def;
   // for computing time based on frame count

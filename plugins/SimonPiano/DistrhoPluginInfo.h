@@ -59,16 +59,6 @@ inline bool isPlaying(int status) {
     return (status == PLAYING_WAIT || status == PLAYING_CORRECT || status == PLAYING_INCORRECT);
 }
 
-// check if a played note is similar to one of interest, considering the root note and the interval (number of notes). Tries to be as smart as possible, if the input note is out of range consider that the position is just shifted (user might not have the correct octave configured)
-inline  bool isCorrespondingNote(int note, int target, int root, int nbNotes) {
-    // round number of notes to next octave
-  int interval = ceil(nbNotes / (float) 12) * 12;
-    d_stdout("note: %d, target: %d, interval: %d", note, target, interval);
-    d_stdout("note shift: %d, target shift: %d", note + root % 12, target + root % 12);
-    d_stdout("note shift mod: %d, target shift mod: %d", (note + root % 12) % interval, (target + root % 12) % interval);
-    return (note + root % 12) % interval  == (target + root % 12) % interval;
-  }
-
 // sharing parameters info across DSP and UI.
 const ParameterRanges params[kParameterCount] =
     {
