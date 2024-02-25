@@ -62,6 +62,33 @@ protected:
       parameter.ranges.min = params[kNbNotes].min;
       parameter.ranges.max = params[kNbNotes].max;
       break;
+    case kScaleC:
+    case kScaleCs:
+    case kScaleD:
+    case kScaleDs:
+    case kScaleE:
+    case kScaleF:
+    case kScaleFs:
+    case kScaleG:
+    case kScaleGs:
+    case kScaleA:
+    case kScaleAs:
+    case kScaleB:
+      parameter.hints = kParameterIsAutomatable|kParameterIsBoolean;
+      {
+        // we will do our bet to make that a tiny bit less tedious
+        int numScale = index - kScaleC;
+        if (numScale >= 0 && numScale < 12) {
+          parameter.name = scaleNotes[numScale];
+          parameter.shortName = scaleNotes[numScale];
+          parameter.symbol = scaleNotes[numScale];
+        }
+      }
+      parameter.unit = "";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
     case kEffectiveRoot:
       parameter.hints = kParameterIsInteger | kParameterIsOutput;
       parameter.name = "Effective root";
@@ -126,6 +153,33 @@ protected:
       parameter.ranges.min = params[kStep].min;
       parameter.ranges.max = params[kStep].max;
       break;
+    case kEffectiveScaleC:
+    case kEffectiveScaleCs:
+    case kEffectiveScaleD:
+    case kEffectiveScaleDs:
+    case kEffectiveScaleE:
+    case kEffectiveScaleF:
+    case kEffectiveScaleFs:
+    case kEffectiveScaleG:
+    case kEffectiveScaleGs:
+    case kEffectiveScaleA:
+    case kEffectiveScaleAs:
+    case kEffectiveScaleB:
+      parameter.hints = kParameterIsBoolean | kParameterIsOutput;
+      {
+          // we will do our bet to make that a tiny bit less tedious
+        int numScale = index - kEffectiveScaleC;
+        if (numScale >= 0 && numScale < 12) {
+          parameter.name = String("Effective ") + scaleNotes[numScale];
+          parameter.shortName = String("eff ") + scaleNotes[numScale];
+          parameter.symbol = String("effective") + scaleNotes[numScale];
+          }
+      }
+      parameter.unit = "";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
 
     default:
       break;
@@ -144,6 +198,25 @@ protected:
       return root;
     case kNbNotes:
       return nbNotes;
+    case kScaleC:
+    case kScaleCs:
+    case kScaleD:
+    case kScaleDs:
+    case kScaleE:
+    case kScaleF:
+    case kScaleFs:
+    case kScaleG:
+    case kScaleGs:
+    case kScaleA:
+    case kScaleAs:
+    case kScaleB:
+      {
+        int numScale = index - kScaleC;
+        if (numScale >= 0 && numScale < 12) {
+          return scale[index];
+        }
+      }
+      return 0.9;
     case kEffectiveRoot:
       return effectiveRoot;
     case kEffectiveNbNotes:
@@ -156,6 +229,25 @@ protected:
       return round;
     case kStep:
       return stepN;
+    case kEffectiveScaleC:
+    case kEffectiveScaleCs:
+    case kEffectiveScaleD:
+    case kEffectiveScaleDs:
+    case kEffectiveScaleE:
+    case kEffectiveScaleF:
+    case kEffectiveScaleFs:
+    case kEffectiveScaleG:
+    case kEffectiveScaleGs:
+    case kEffectiveScaleA:
+    case kEffectiveScaleAs:
+    case kEffectiveScaleB:
+      {
+        int numScale = index - kScaleC;
+        if (numScale >= 0 && numScale < 12) {
+          return scale[index];
+        }
+      }
+      return 0.9;
 
     default:
       return 0.0;
@@ -179,6 +271,25 @@ protected:
       break;
     case kNbNotes:
       nbNotes = value;
+      break;
+    case kScaleC:
+    case kScaleCs:
+    case kScaleD:
+    case kScaleDs:
+    case kScaleE:
+    case kScaleF:
+    case kScaleFs:
+    case kScaleG:
+    case kScaleGs:
+    case kScaleA:
+    case kScaleAs:
+    case kScaleB:
+      {
+        int numScale = index - kScaleC;
+        if (numScale >= 0 && numScale < 12) {
+          scale[numScale] = value;
+        }
+      }
       break;
     case kEffectiveRoot:
       effectiveRoot = value;
@@ -422,6 +533,8 @@ private:
   int effectiveRoot =  params[kEffectiveRoot].def;
   int effectiveNbNotes =  params[kEffectiveNbNotes].def;
   int curNote = params[kCurNote].def;
+  bool scale[12];
+  bool effectiveScale[12];
   // associated channel, to abort note
   int curChannel = 0;
   // current round number

@@ -28,6 +28,23 @@ enum Parameters {
     kStart,
     kRoot, 
     kNbNotes,
+    // toggle for each note
+    // NB: must be consecutive for some DSP trickery!
+    kScaleC,
+    kScaleCs,
+    kScaleD,
+    kScaleDs,
+    kScaleE,
+    kScaleF,
+    kScaleFs,
+    kScaleG,
+    kScaleGs,
+    kScaleA,
+    kScaleAs,
+    kScaleB,
+
+    // output parameter from here
+    
     // root and nb notes are not applied during game
     kEffectiveRoot,
     kEffectiveNbNotes,
@@ -35,6 +52,20 @@ enum Parameters {
     kCurNote,
     kRound,
     kStep,
+    // same for scale, even if very tedious
+    // NB: here as well must be consecutive
+    kEffectiveScaleC,
+    kEffectiveScaleCs,
+    kEffectiveScaleD,
+    kEffectiveScaleDs,
+    kEffectiveScaleE,
+    kEffectiveScaleF,
+    kEffectiveScaleFs,
+    kEffectiveScaleG,
+    kEffectiveScaleGs,
+    kEffectiveScaleA,
+    kEffectiveScaleAs,
+    kEffectiveScaleB,
 
     kParameterCount
 };
@@ -67,12 +98,36 @@ const ParameterRanges params[kParameterCount] =
      ParameterRanges(0, 0, 1), // start
      ParameterRanges(60, 0, 127), // root
      ParameterRanges(12, 1, 128), // number of notes
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
      ParameterRanges(60, 0, 127), // effective root
      ParameterRanges(12, 1, 128), // effective number of notes
      ParameterRanges(WAITING, 0, STATUS_COUNT), // status
      ParameterRanges(-1, -1, 127), // current active note
      ParameterRanges(0, 0, MAX_ROUND), // current round
      ParameterRanges(0, 0, MAX_ROUND), // current step number
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(1, 0, 1), // scale
     };
 
 // names for notes
