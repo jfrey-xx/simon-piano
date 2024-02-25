@@ -75,4 +75,8 @@ const ParameterRanges params[kParameterCount] =
      ParameterRanges(0, 0, MAX_ROUND), // current step number
     };
 
+// names for notes
+static const char* const scaleNotes[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
+
 #endif

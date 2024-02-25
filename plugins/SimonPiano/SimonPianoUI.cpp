@@ -3,6 +3,16 @@
 
 START_NAMESPACE_DISTRHO
 
+// some shared color
+const ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); 
+const ImU32 colBlackKey = ImColor(ImVec4(0.0f, 0.0f, 0.0f, 1.0f)); 
+const ImU32 colWhiteKey = ImColor(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+const ImU32 colBlackKeyDimmed = ImColor(ImVec4(0.33f, 0.33f, 0.33f, 1.0f)); 
+const ImU32 colWhiteKeyDimmed = ImColor(ImVec4(0.66f, 0.66f, 0.66f, 1.0f)); 
+const ImU32 colInstructionKey = ImColor(ImVec4(0.0f, 0.0f, 1.0f, 1.0f)); 
+const ImU32 colCorrectKey = ImColor(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); 
+const ImU32 colIncorrectKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); 
+
 // return true if the key for this note is C, D, E, F, G, A, B
 bool isKeyWhite(uint note) {
   // only twelve note
@@ -172,7 +182,6 @@ protected:
       if (uiRoot != root) {
 	setParameterValue(kRoot, uiRoot);
       }
-      ImGui::Spacing();
 
       // same for number of notes/keys
       int uiNbNotes = nbNotes;
@@ -180,10 +189,41 @@ protected:
       if (uiNbNotes != nbNotes) {
 	setParameterValue(kNbNotes, uiNbNotes);
       }
+
+      // toggles for scale
+      // FIXME: does not... scale well with window size (buttons and padding ?)
+      for (int i = 0; i < 12; i++) {
+	if (i > 0) {
+	  ImGui::SameLine();
+	}
+	ImGui::PushID(i);
+	// as with a piano keyboard, here as well mimic black/white keys
+	if(isKeyWhite(i)) {
+	  ImGui::PushStyleColor(ImGuiCol_Button, colWhiteKey);
+	  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colWhiteKey);
+	  ImGui::PushStyleColor(ImGuiCol_ButtonActive, colWhiteKeyDimmed);
+	  ImGui::PushStyleColor(ImGuiCol_Text, colBlackKey);
+	}
+	else {
+	  ImGui::PushStyleColor(ImGuiCol_Button, colBlackKey);
+	  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colBlackKey);
+	  ImGui::PushStyleColor(ImGuiCol_ButtonActive, colBlackKeyDimmed);
+	  ImGui::PushStyleColor(ImGuiCol_Text, colWhiteKey);
+	}
+	if (ImGui::Button(scaleNotes[i])) {
+
+	}
+	ImGui::PopStyleColor(4);
+	ImGui::PopID();
+      }
+      ImGui::SameLine();
+      ImGui::Text("Scale");
+
       // --- end disable part of the UI during game ---
       if (isRunning(status)) {
 	ImGui::EndDisabled();
       }
+      ImGui::Spacing();
 
       // draw next to current position
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
@@ -238,13 +278,6 @@ private:
     blackKeySize.y = whiteKeySize.y * 0.4;
     // background area for black keys
     ImVec2 blackBackgroundSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
-
-    ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); 
-    ImU32 colBlackKey = ImColor(ImVec4(0.0f, 0.0f, 0.0f, 1.0f)); 
-    ImU32 colWhiteKey = ImColor(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
-    ImU32 colInstructionKey = ImColor(ImVec4(0.0f, 0.0f, 1.0f, 1.0f)); 
-    ImU32 colCorrectKey = ImColor(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); 
-    ImU32 colIncorrectKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); 
 
     // draw the background
     draw_list->AddRectFilled(pos, pos + size, colBackground);
