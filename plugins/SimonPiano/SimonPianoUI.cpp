@@ -96,8 +96,8 @@ protected:
 
       // compute base width/height
       double scaleFactor = getScaleFactor();
-      const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-      const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+      uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+      uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
 
       // take into account resize of window
       double scaleWidth = getWidth() / (float) width;
@@ -111,6 +111,9 @@ protected:
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
       }
 
+      // padding is a fraction of the area
+      ImVec2 winPadding(DISTRHO_UI_DEFAULT_WIDTH * 0.01 * scaleFactor, DISTRHO_UI_DEFAULT_HEIGHT * 0.01 * scaleFactor);
+
       // center window with fixed ration defined by default width and height
       ImGui::SetNextWindowPos(ImVec2((getWidth() - DISTRHO_UI_DEFAULT_WIDTH * scaleFactor) /2, (getHeight() - DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor) /2));
       ImGui::SetNextWindowSize(ImVec2(DISTRHO_UI_DEFAULT_WIDTH * scaleFactor, DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor));
@@ -118,6 +121,8 @@ protected:
       // alter background color to check position
       ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
       ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+      // specify our own padding to better scale and know it
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, winPadding);
       // we only use one window, will take all space and hide controls
       ImGui::Begin("Demo window", NULL, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
       // scale UI
@@ -182,7 +187,7 @@ protected:
 
       // draw next to current position
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
-      const ImVec2 keyboardSize(400 * scaleFactor, 200 * scaleFactor);
+      const ImVec2 keyboardSize(ImGui::GetWindowSize().x - winPadding.x * 2, 200 * scaleFactor);
       drawPiano(p, keyboardSize, root, nbNotes);
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
