@@ -255,12 +255,15 @@ protected:
     else if (isPlaying(status)) {
       d_stdout("pass it");
       sendNoteOff(note, channel, frame);
-      curNote = -1;
-      status = PLAYING_WAIT;
-      // time for new round
-      if ((int) playN >= round) {
-        d_stdout("playing over");
-        newRound();
+      // take into account for play only if we turn off current note (we might also release part of a chord)
+      if (note == curNote) {
+        status = PLAYING_WAIT;
+        // time for new round
+        if ((int) playN >= round) {
+          d_stdout("playing over");
+          newRound();
+        }
+        curNote = -1;
       }
     }
   }
