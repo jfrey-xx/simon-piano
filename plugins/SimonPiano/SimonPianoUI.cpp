@@ -190,34 +190,7 @@ protected:
 	setParameterValue(kNbNotes, uiNbNotes);
       }
 
-      // toggles for scale
-      // FIXME: does not... scale well with window size (buttons and padding ?)
-      for (int i = 0; i < 12; i++) {
-	if (i > 0) {
-	  ImGui::SameLine();
-	}
-	ImGui::PushID(i);
-	// as with a piano keyboard, here as well mimic black/white keys
-	if(isKeyWhite(i)) {
-	  ImGui::PushStyleColor(ImGuiCol_Button, colWhiteKey);
-	  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colWhiteKey);
-	  ImGui::PushStyleColor(ImGuiCol_ButtonActive, colWhiteKeyDimmed);
-	  ImGui::PushStyleColor(ImGuiCol_Text, colBlackKey);
-	}
-	else {
-	  ImGui::PushStyleColor(ImGuiCol_Button, colBlackKey);
-	  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colBlackKey);
-	  ImGui::PushStyleColor(ImGuiCol_ButtonActive, colBlackKeyDimmed);
-	  ImGui::PushStyleColor(ImGuiCol_Text, colWhiteKey);
-	}
-	if (ImGui::Button(scaleNotes[i])) {
-
-	}
-	ImGui::PopStyleColor(4);
-	ImGui::PopID();
-      }
-      ImGui::SameLine();
-      ImGui::Text("Scale");
+      drawScale(scaleFactor);
 
       // --- end disable part of the UI during game ---
       if (isRunning(status)) {
@@ -360,6 +333,46 @@ private:
     }
   }
 
+  // toggles for scale
+  void drawScale(float scaleFactor) {
+    // FIXME: here manually adjusted values, compute compard to actual height
+    float spaceX = 5.0f * scaleFactor;
+    float whiteX = 38.0f * scaleFactor;
+    float blackX = 32.0f * scaleFactor;
+    float keyX;
+    // manually shift element to scale properly
+    float posX = spaceX;
+    for (int i = 0; i < 12; i++) {
+      ImGui::PushID(i);
+      if (i > 0) {
+	ImGui::SameLine(posX);
+      }
+      // as with a piano keyboard, here as well mimic black/white keys
+      if(isKeyWhite(i)) {
+	ImGui::PushStyleColor(ImGuiCol_Button, colWhiteKey);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colWhiteKey);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, colWhiteKeyDimmed);
+	ImGui::PushStyleColor(ImGuiCol_Text, colBlackKey);
+	keyX = whiteX;
+      }
+      else {
+	ImGui::PushStyleColor(ImGuiCol_Button, colBlackKey);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colBlackKey);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, colBlackKeyDimmed);
+	ImGui::PushStyleColor(ImGuiCol_Text, colWhiteKey);
+	keyX = blackX;
+      }
+      if (ImGui::Button(scaleNotes[i], ImVec2(keyX, 0))) {
+	
+      }
+      posX += keyX + spaceX;
+      ImGui::PopStyleColor(4);
+      ImGui::PopID();
+    }
+    ImGui::SameLine();
+    ImGui::Text("Scale");
+  }
+  
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPianoUI)
 };
 
