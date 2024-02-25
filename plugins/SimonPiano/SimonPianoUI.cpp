@@ -221,7 +221,8 @@ private:
   int curNote = params[kCurNote].def;
   int round = params[kRound].def;
   int step = params[kStep].def;
-
+  bool scale[12] = {0};
+  
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
   // size: size of the widget
@@ -342,6 +343,10 @@ private:
     float keyX;
     // manually shift element to scale properly
     float posX = spaceX;
+    // temp variables for colors
+    ImU32 colKey;
+    ImU32 colActive;
+    ImU32 colText;
     for (int i = 0; i < 12; i++) {
       ImGui::PushID(i);
       if (i > 0) {
@@ -349,22 +354,38 @@ private:
       }
       // as with a piano keyboard, here as well mimic black/white keys
       if(isKeyWhite(i)) {
-	ImGui::PushStyleColor(ImGuiCol_Button, colWhiteKey);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colWhiteKey);
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, colWhiteKeyDimmed);
-	ImGui::PushStyleColor(ImGuiCol_Text, colBlackKey);
+	if (scale[i]) {
+	  colKey = colWhiteKey;
+	  colActive = colWhiteKeyDimmed;
+	}
+	else {
+	  colKey = colWhiteKeyDimmed;
+	  colActive = colWhiteKey;
+	}
+	colText = colBlackKey;
 	keyX = whiteX;
       }
       else {
-	ImGui::PushStyleColor(ImGuiCol_Button, colBlackKey);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colBlackKey);
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, colBlackKeyDimmed);
-	ImGui::PushStyleColor(ImGuiCol_Text, colWhiteKey);
+	if (scale[i]) {
+	  colKey = colBlackKey;
+	  colActive = colBlackKeyDimmed;
+	}
+	else {
+	  colKey = colBlackKeyDimmed;
+	  colActive = colBlackKey;
+	}
+	colText = colWhiteKey;
 	keyX = blackX;
       }
+      ImGui::PushStyleColor(ImGuiCol_Button, colKey);
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colKey);
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive, colActive);
+      ImGui::PushStyleColor(ImGuiCol_Text, colText);
+
       if (ImGui::Button(scaleNotes[i], ImVec2(keyX, 0))) {
-	
+	scale[i] = !scale[i];
       }
+
       posX += keyX + spaceX;
       ImGui::PopStyleColor(4);
       ImGui::PopID();
