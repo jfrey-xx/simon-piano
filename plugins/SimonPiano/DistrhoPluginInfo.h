@@ -34,6 +34,7 @@ enum Parameters {
     kStatus,
     kCurNote,
     kRound,
+    kStep,
 
     kParameterCount
 };
@@ -70,7 +71,8 @@ const ParameterRanges params[kParameterCount] =
      ParameterRanges(12, 1, 128), // effective number of notes
      ParameterRanges(WAITING, 0, STATUS_COUNT), // status
      ParameterRanges(-1, -1, 127), // current active note
-     ParameterRanges(0, 0, MAX_ROUND), // current active note
+     ParameterRanges(0, 0, MAX_ROUND), // current round
+     ParameterRanges(0, 0, MAX_ROUND), // current step number
     };
 
 #endif

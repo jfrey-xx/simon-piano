@@ -73,6 +73,12 @@ protected:
       case kCurNote:
 	curNote = value;
 	break;
+      case kRound:
+	round = value;
+	break;
+      case kStep:
+	step = value;
+	break;
 
       default:
 	break;
@@ -119,23 +125,26 @@ protected:
 
       switch (status) {
       case WAITING:
-	ImGui::TextWrapped("Press start for a new game.");
+	ImGui::TextWrapped("Welcome");
+	ImGui::TextWrapped("Press start for a new game");
 	break;
       case STARTING:
+	ImGui::TextWrapped("Round %d", round);
 	ImGui::TextWrapped("Pay attention...");
 	break;
       case INSTRUCTIONS:
+	ImGui::TextWrapped("Round %d -- step %d", round, step);
 	ImGui::TextWrapped("Play after me!");
 	break;
 	break;
       case PLAYING_WAIT:
       case PLAYING_CORRECT:
       case PLAYING_INCORRECT:
-	ImGui::TextWrapped("Your turn!");
-	break;
+	ImGui::TextWrapped("Round %d -- step %d", round, step);
 	ImGui::TextWrapped("Your turn!");
 	break;
       default:
+	ImGui::TextWrapped("Round %d", round);
 	ImGui::TextWrapped("Play after me!");
 	break;
       }
@@ -178,7 +187,7 @@ protected:
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
       ImGui::Spacing();
-      ImGui::TextWrapped("Lalala");
+      ImGui::TextWrapped("Current best: ?");
 
       ImGui::End();
       
@@ -192,6 +201,8 @@ private:
   int root = params[kRoot].def;
   int nbNotes = params[kNbNotes].def;
   int curNote = params[kCurNote].def;
+  int round = params[kRound].def;
+  int step = params[kStep].def;
 
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget

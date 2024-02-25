@@ -9,3 +9,7 @@ During instructions defaults to first MIDI channel and full velocity, while play
 
 - configurable "jokers", can have one error every xx note
 - debounce for MIDI input?
+
+# Known issues
+
+- upon closing the plugin notes if active will get stuck

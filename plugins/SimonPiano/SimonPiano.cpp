@@ -110,10 +110,21 @@ protected:
       parameter.name = "Round number";
       parameter.shortName = "round";
       parameter.symbol = "round";
-      parameter.unit = "";
+      parameter.unit = "round";
       parameter.ranges.def = params[kRound].def;
       parameter.ranges.min = params[kRound].min;
       parameter.ranges.max = params[kRound].max;
+      break;
+    case kStep:
+      // what step we are at
+      parameter.hints = kParameterIsInteger | kParameterIsOutput;
+      parameter.name = "Step number";
+      parameter.shortName = "step";
+      parameter.symbol = "step";
+      parameter.unit = "step";
+      parameter.ranges.def = params[kStep].def;
+      parameter.ranges.min = params[kStep].min;
+      parameter.ranges.max = params[kStep].max;
       break;
 
     default:
@@ -141,6 +152,10 @@ protected:
       return status;
     case kCurNote:
       return curNote;
+    case kRound:
+      return round;
+    case kStep:
+      return stepN;
 
     default:
       return 0.0;
@@ -180,10 +195,13 @@ protected:
     }
   }
 
+  // turning off current note
+  // frame: frame of the event in the buffer
   void abortCurrentNote(uint32_t frame=0) {
     if (curNote >= 0) {
       d_stdout("kill previous note %d at channel %d", curNote, curChannel);
       sendNoteOff(curNote, curChannel, frame);
+      curNote = -1;
     }
   }
 
@@ -217,7 +235,7 @@ protected:
       curChannel = channel;
     }
     // only pass through during playing until last note, keep all info
-    else if (isPlaying(status) && (int) playN < round) {
+    else if (isPlaying(status) && (int) stepN < round) {
       d_stdout("pass it");
       // disable any currently playing note -- i.e. monophonic
       if (curNote >= 0) {
@@ -227,7 +245,7 @@ protected:
       sendNoteOn(note, velocity, channel, frame);
       curNote = note;
       curChannel = channel;
-      if (playN < MAX_ROUND && curNote == sequence[playN]) {
+      if (stepN < MAX_ROUND && curNote == sequence[stepN]) {
         d_stdout("correct");
         status = PLAYING_CORRECT;
       }
@@ -235,7 +253,7 @@ protected:
         d_stdout("incorrect");
         status = PLAYING_INCORRECT;
       }
-      playN++;
+      stepN++;
     }      
   }
 
@@ -259,7 +277,7 @@ protected:
       if (note == curNote) {
         status = PLAYING_WAIT;
         // time for new round
-        if ((int) playN >= round) {
+        if ((int) stepN >= round) {
           d_stdout("playing over");
           newRound();
         }
@@ -281,8 +299,7 @@ protected:
   void newRound() {
     d_stdout("new round");
     status = INSTRUCTIONS;
-    instructionN = 0;
-    playN = 0;
+    stepN = 0;
     // draw another note
     addNote();
     // reset counters
@@ -306,31 +323,23 @@ protected:
   // playing next note in the sequence
   // frame: frame of the event in the buffer
   void nextNote(uint32_t frame=0) {
-    d_stdout("instruction %d", instructionN);
-    // reached end of sequence, user's turn 
-    if((int) instructionN >= round) {
+    d_stdout("instruction %d", stepN);
+    // reached end of sequence, user's turn
+    if((int) stepN >= round) {
       d_stdout("instruction reached sequence");
       status = PLAYING_WAIT;
+      // reset counter for user
+      stepN = 0;
     }
-    else if (instructionN < MAX_ROUND) {
-      curNote = sequence[instructionN];
+    else if (stepN < MAX_ROUND) {
+      curNote = sequence[stepN];
       d_stdout("next note %d", curNote);
       if (curNote >= 0) {
         // first channel and full velocity by default
         curChannel = 0;
         sendNoteOn(curNote, 127, curChannel, frame);
-        instructionN++;
+        stepN++;
       }
-    }
-  }
-
-  // turning off current instruction note
-  // frame: frame of the event in the buffer
-  void endNote(uint32_t frame=0) {
-    d_stdout("end note %d", curNote);
-    if (curNote >= 0) {
-      sendNoteOff(curNote, curChannel, frame);
-      curNote = -1;
     }
   }
 
@@ -373,7 +382,7 @@ protected:
           if (elapsedTime >= NOTE_DURATION) {
             d_stdout("turn off note");
             lastTime = curTime;
-            endNote(frame + i);
+            abortCurrentNote(frame + i);
           }
         }
         // test if we should start new note
@@ -401,8 +410,7 @@ protected:
     }
     setParameterValue(kCurNote, -1);
     round = 0;
-    instructionN = 0;
-    playN = 0;
+    stepN = 0;
   }
 
 private:
@@ -423,11 +431,8 @@ private:
   double lastTime = 0;
   // sequence of notes for this round
   int sequence[MAX_ROUND];
-  // where in the sequence the instruction is at
-  uint instructionN = 0;
-  // where in the sequence the player is at
-  uint playN = 0;
-
+  // where in the sequence the instruction or the player is at
+  uint stepN = 0;
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPiano);
 };
