@@ -90,25 +90,37 @@ protected:
       case kStep:
 	step = value;
 	break;
-    case kEffectiveScaleC:
-    case kEffectiveScaleCs:
-    case kEffectiveScaleD:
-    case kEffectiveScaleDs:
-    case kEffectiveScaleE:
-    case kEffectiveScaleF:
-    case kEffectiveScaleFs:
-    case kEffectiveScaleG:
-    case kEffectiveScaleGs:
-    case kEffectiveScaleA:
-    case kEffectiveScaleAs:
-    case kEffectiveScaleB:
-      {
-        int numScale = index - kEffectiveScaleC;
-        if (numScale >= 0 && numScale < 12) {
-          scale[numScale] = value;
-        }
-      }
-      break;
+      case kEffectiveScaleC:
+      case kEffectiveScaleCs:
+      case kEffectiveScaleD:
+      case kEffectiveScaleDs:
+      case kEffectiveScaleE:
+      case kEffectiveScaleF:
+      case kEffectiveScaleFs:
+      case kEffectiveScaleG:
+      case kEffectiveScaleGs:
+      case kEffectiveScaleA:
+      case kEffectiveScaleAs:
+      case kEffectiveScaleB:
+	{
+	  int numScale = index - kEffectiveScaleC;
+	  if (numScale >= 0 && numScale < 12) {
+	    scale[numScale] = value;
+	  }
+	}
+	break;
+      case kRoundsForMiss:
+	roundsForMiss = value;
+	break;
+      case kNbMiss:
+	nbMiss = value;
+	break;
+      case kMaxMiss:
+	maxMiss = value;
+	break;
+      case kMaxRound:
+	maxRound = value;
+	break;
 
       default:
 	break;
@@ -171,6 +183,9 @@ protected:
 	ImGui::TextWrapped("Round %d -- step %d", round, step);
 	ImGui::TextWrapped("Play after me!");
 	break;
+      case GAMEOVER:
+	ImGui::TextWrapped("Game over during Round %d -- step %d", round, step);
+	ImGui::TextWrapped("Try again!");
 	break;
       case PLAYING_WAIT:
       case PLAYING_CORRECT:
@@ -219,6 +234,16 @@ protected:
       }
       ImGui::Spacing();
 
+      // sync rounds for miss
+      int uiRoundsForMiss = roundsForMiss;
+      ImGui::SliderInt("Rounds for miss", &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
+      if (uiRoundsForMiss != roundsForMiss) {
+	roundsForMiss = uiRoundsForMiss;
+	setParameterValue(kRoundsForMiss, roundsForMiss);
+      }
+
+      ImGui::Spacing();
+
       // draw next to current position
       const ImVec2 p = ImGui::GetCursorScreenPos(); 
       const ImVec2 keyboardSize(ImGui::GetWindowSize().x - winPadding.x * 2, 200 * scaleFactor);
@@ -226,7 +251,8 @@ protected:
       // move along
       ImGui::SetCursorScreenPos(p + keyboardSize) ;
       ImGui::Spacing();
-      ImGui::TextWrapped("Current best: ?");
+      ImGui::TextWrapped("Missed %d/%d", nbMiss, maxMiss);
+      ImGui::TextWrapped("Current best: %d", maxRound);
 
       ImGui::End();
       
@@ -243,6 +269,10 @@ private:
   int round = params[kRound].def;
   int step = params[kStep].def;
   bool scale[12] = {0};
+  int roundsForMiss = params[kRoundsForMiss].def;
+  int nbMiss = params[kNbMiss].def;
+  int maxMiss = params[kMaxMiss].def;
+  int maxRound = params[kMaxRound].def;
   
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget

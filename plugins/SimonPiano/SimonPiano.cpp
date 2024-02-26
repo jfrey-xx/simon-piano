@@ -95,6 +95,17 @@ protected:
       parameter.ranges.min = params[index].min;
       parameter.ranges.max = params[index].max;
       break;
+    case kRoundsForMiss:
+      // how many rounds to grant a new miss. 0 to disable.
+      parameter.hints = kParameterIsInteger | kParameterIsAutomatable;
+      parameter.name = "Rounds to grant a miss";
+      parameter.shortName = "rnd f mis";
+      parameter.symbol = "roundsformiss";
+      parameter.unit = "rounds";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
     case kEffectiveRoot:
       parameter.hints = kParameterIsInteger | kParameterIsOutput;
       parameter.name = "Effective root";
@@ -186,6 +197,36 @@ protected:
       parameter.ranges.min = params[index].min;
       parameter.ranges.max = params[index].max;
       break;
+    case kNbMiss:
+      parameter.hints = kParameterIsInteger | kParameterIsOutput;
+      parameter.name = "Number of miss";
+      parameter.shortName = "nb miss";
+      parameter.symbol = "nbmiss";
+      parameter.unit = "miss";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
+    case kMaxMiss:
+      parameter.hints = kParameterIsInteger | kParameterIsOutput;
+      parameter.name = "Max number of miss";
+      parameter.shortName = "max miss";
+      parameter.symbol = "maxmiss";
+      parameter.unit = "miss";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
+    case kMaxRound:
+      parameter.hints = kParameterIsInteger | kParameterIsOutput;
+      parameter.name = "Max round reached";
+      parameter.shortName = "max round";
+      parameter.symbol = "maxround";
+      parameter.unit = "rounds";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
 
     default:
       break;
@@ -223,6 +264,8 @@ protected:
         }
       }
       return 0.9;
+    case kRoundsForMiss:
+      return roundsForMiss;
     case kEffectiveRoot:
       return effectiveRoot;
     case kEffectiveNbNotes:
@@ -254,6 +297,12 @@ protected:
         }
       }
       return 0.9;
+    case kNbMiss:
+      return nbMiss;
+    case kMaxMiss:
+      return maxMiss;
+    case kMaxRound:
+      return maxRound;
 
     default:
       return 0.0;
@@ -296,6 +345,9 @@ protected:
           scale[numScale] = value;
         }
       }
+      break;
+    case kRoundsForMiss:
+      roundsForMiss = value;
       break;
     case kEffectiveRoot:
       effectiveRoot = value;
@@ -400,6 +452,10 @@ protected:
         // sequence is terminated
         if (status == PLAYING_OVER) {
           status = GAMEOVER;
+          // level up!
+          if (round > 0 && round - 1 > maxRound) {
+            maxRound = round - 1;
+          }
         }
         // still in play, either next or new round
         else {
@@ -434,7 +490,7 @@ protected:
     // reset counters
     lastTime = curTime;
     // check if we should grant a new miss
-    if (round - lastRFM >= roundsForMiss) {
+    if (roundsForMiss > 0 && round - lastRFM >= roundsForMiss) {
       lastRFM = round;
       maxMiss++;
       d_stdout("grant a new miss!. current miss: %d / %d", nbMiss, maxMiss);
@@ -582,6 +638,14 @@ private:
   int curNote = params[kCurNote].def;
   bool scale[12];
   bool effectiveScale[12];
+  // how many notes are missed in this round
+  int nbMiss = 0;
+  // max miss before game over
+  int maxMiss = 0;
+  // increase number of possible miss every xx round
+  int roundsForMiss = 1;
+  // max round completed
+  int maxRound = 0;
   // associated channel, to abort note
   int curChannel = 0;
   // current round number
@@ -595,12 +659,6 @@ private:
   uint stepN = 0;
   // our number generator
   Rando ran;
-  // how many notes are missed in this round
-  int nbMiss = 0;
-  // max miss before game over
-  int maxMiss = 0;
-  // increase number of possible miss every xx round
-  int roundsForMiss = 1;
   // last time a miss was granted
   int lastRFM = 0;
 
