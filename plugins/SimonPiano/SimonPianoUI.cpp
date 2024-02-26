@@ -1,5 +1,6 @@
 
 #include "DistrhoUI.hpp"
+#include "SimonUtils.h"
 
 START_NAMESPACE_DISTRHO
 

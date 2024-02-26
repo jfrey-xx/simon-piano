@@ -1,7 +1,10 @@
 
 #include "ExtendedPlugin.hpp"
+#include "SimonUtils.h"
+#include <time.h> 
 
 START_NAMESPACE_DISTRHO
+
 
 // time in seconds between notes for instructions (and before first instruction)
 #define NOTE_INTERVAL 0.25
@@ -12,6 +15,9 @@ class SimonPiano : public ExtendedPlugin {
 public:
   // Note: do not care with default values since we will sent all parameters upon init
   SimonPiano() : ExtendedPlugin(kParameterCount, 0, 0) {
+    // randomize seed for our number generator
+    ran.srand(time(NULL));
+    // make sure to init all variables
     reset();
   }
 
@@ -438,7 +444,7 @@ protected:
         }
       }
       if (nbActives > 0) {
-        sequence[round] = activeNotes[rand() % nbActives];
+        sequence[round] = activeNotes[ran.rand() % nbActives];
       }
       // fallback: root
       else {
@@ -566,6 +572,8 @@ private:
   int sequence[MAX_ROUND];
   // where in the sequence the instruction or the player is at
   uint stepN = 0;
+  // our number generator
+  Rando ran;
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPiano);
 };
