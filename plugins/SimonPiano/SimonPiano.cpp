@@ -4,9 +4,9 @@
 START_NAMESPACE_DISTRHO
 
 // time in seconds between notes for instructions (and before first instruction)
-#define NOTE_INTERVAL 1
+#define NOTE_INTERVAL 0.25
 // how long each note is held during instruction
-#define NOTE_DURATION 1
+#define NOTE_DURATION 0.5
 
 class SimonPiano : public ExtendedPlugin {
 public:
@@ -426,8 +426,24 @@ protected:
       status = GAMEOVER;
     }
     else if (round >= 0) {
-      // TODO
-      sequence[round] = effectiveRoot + round;
+      // brute-force the possible notes considering root, number of notes, scale
+      int activeNotes[128] = {0};
+      int nbActives = 0;
+      for (int i = 0; i < 128 && i < effectiveNbNotes; i++) {
+        int note = effectiveRoot + i;
+        // make extra-sure we won't go out of bounds
+        if ((note % 12) >= 0 and effectiveScale[note % 12]) {
+          activeNotes[nbActives] = note;
+          nbActives++;
+        }
+      }
+      if (nbActives > 0) {
+        sequence[round] = activeNotes[rand() % nbActives];
+      }
+      // fallback: root
+      else {
+        sequence[round] = effectiveRoot;
+      }
     }
   }
 
