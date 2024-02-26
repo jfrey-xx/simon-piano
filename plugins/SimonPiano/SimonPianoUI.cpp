@@ -89,6 +89,25 @@ protected:
       case kStep:
 	step = value;
 	break;
+    case kEffectiveScaleC:
+    case kEffectiveScaleCs:
+    case kEffectiveScaleD:
+    case kEffectiveScaleDs:
+    case kEffectiveScaleE:
+    case kEffectiveScaleF:
+    case kEffectiveScaleFs:
+    case kEffectiveScaleG:
+    case kEffectiveScaleGs:
+    case kEffectiveScaleA:
+    case kEffectiveScaleAs:
+    case kEffectiveScaleB:
+      {
+        int numScale = index - kEffectiveScaleC;
+        if (numScale >= 0 && numScale < 12) {
+          scale[numScale] = value;
+        }
+      }
+      break;
 
       default:
 	break;
@@ -383,7 +402,7 @@ private:
       ImGui::PushStyleColor(ImGuiCol_Text, colText);
 
       if (ImGui::Button(scaleNotes[i], ImVec2(keyX, 0))) {
-	scale[i] = !scale[i];
+	setParameterValue(kScaleC + i, !scale[i]);
       }
 
       posX += keyX + spaceX;

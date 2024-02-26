@@ -242,9 +242,9 @@ protected:
     case kEffectiveScaleAs:
     case kEffectiveScaleB:
       {
-        int numScale = index - kScaleC;
+        int numScale = index - kEffectiveScaleC;
         if (numScale >= 0 && numScale < 12) {
-          return scale[index];
+          return effectiveScale[numScale];
         }
       }
       return 0.9;
@@ -471,6 +471,10 @@ protected:
       else if (effectiveNbNotes != nbNotes) {
         abortCurrentNote(frame);
         effectiveNbNotes = nbNotes;
+      }
+      // sync scale now
+      for (int i = 0; i < 12; i++) {
+        effectiveScale[i] = scale[i];
       }
     }
 
