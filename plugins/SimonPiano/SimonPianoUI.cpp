@@ -175,6 +175,7 @@ protected:
       case PLAYING_WAIT:
       case PLAYING_CORRECT:
       case PLAYING_INCORRECT:
+      case PLAYING_OVER:
 	ImGui::TextWrapped("Round %d -- step %d", round, step);
 	ImGui::TextWrapped("Your turn!");
 	break;
@@ -300,6 +301,7 @@ private:
 	    colCurKey = colCorrectKey;
 	    break;
 	  case PLAYING_INCORRECT:
+	  case PLAYING_OVER:
 	    colCurKey = colIncorrectKey;
 	    break;
 	  default:
@@ -334,6 +336,7 @@ private:
 	    colCurKey = colCorrectKey;
 	    break;
 	  case PLAYING_INCORRECT:
+	  case PLAYING_OVER:
 	    colCurKey = colIncorrectKey;
 	    break;
 	  default:

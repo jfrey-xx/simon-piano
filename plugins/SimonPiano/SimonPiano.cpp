@@ -365,12 +365,17 @@ protected:
       if (stepN < MAX_ROUND && curNote == sequence[stepN]) {
         d_stdout("correct");
         status = PLAYING_CORRECT;
+        stepN++;
       }
       else {
-        d_stdout("incorrect");
+        d_stdout("incorrect. current miss: %d / %d", nbMiss, maxMiss);
         status = PLAYING_INCORRECT;
+        nbMiss++;
+        if (nbMiss > maxMiss) {
+          d_stdout("game over!");
+          status = PLAYING_OVER;
+        }
       }
-      stepN++;
     }      
   }
 
@@ -387,16 +392,23 @@ protected:
       sendNoteOff(note, channel, frame);
     }
     // while playing check if round is over
-    else if (isPlaying(status)) {
+    else if (isPlaying(status) || status == PLAYING_OVER) {
       d_stdout("pass it");
       sendNoteOff(note, channel, frame);
       // take into account for play only if we turn off current note (we might also release part of a chord)
       if (note == curNote) {
-        status = PLAYING_WAIT;
-        // time for new round
-        if ((int) stepN >= round) {
-          d_stdout("playing over");
-          newRound();
+        // sequence is terminated
+        if (status == PLAYING_OVER) {
+          status = GAMEOVER;
+        }
+        // still in play, either next or new round
+        else {
+          status = PLAYING_WAIT;
+          // time for new round
+          if ((int) stepN >= round) {
+            d_stdout("playing over");
+            newRound();
+          }
         }
         curNote = -1;
       }
@@ -421,6 +433,12 @@ protected:
     addNote();
     // reset counters
     lastTime = curTime;
+    // check if we should grant a new miss
+    if (round - lastRFM >= roundsForMiss) {
+      lastRFM = round;
+      maxMiss++;
+      d_stdout("grant a new miss!. current miss: %d / %d", nbMiss, maxMiss);
+    }
     // increase round last, sequence < round
     round++;
   }
@@ -548,6 +566,9 @@ protected:
     setParameterValue(kCurNote, -1);
     round = 0;
     stepN = 0;
+    nbMiss = 0;
+    maxMiss = 0;
+    lastRFM = 0;
   }
 
 private:
@@ -574,6 +595,14 @@ private:
   uint stepN = 0;
   // our number generator
   Rando ran;
+  // how many notes are missed in this round
+  int nbMiss = 0;
+  // max miss before game over
+  int maxMiss = 0;
+  // increase number of possible miss every xx round
+  int roundsForMiss = 1;
+  // last time a miss was granted
+  int lastRFM = 0;
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPiano);
 };
