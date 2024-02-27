@@ -205,7 +205,6 @@ protected:
 	ImGui::BeginDisabled();
       }
       if (ImGui::Button("Start")) {
-	d_stdout("button click");
 	// send false/true cylce to make sure to toggle
 	setParameterValue(kStart, false);
 	setParameterValue(kStart, true);

@@ -384,6 +384,7 @@ protected:
     if (note < 0) {
       note += interval;
     }
+    d_stdout("shiftnote: %d", note + effectiveRoot);
     // shift back compared to root
     return note + effectiveRoot;
   }
@@ -564,7 +565,7 @@ protected:
         abortCurrentNote(frame);
         effectiveNbNotes = maxNotes;
       }
-      else if (effectiveNbNotes != nbNotes) {
+      else if (nbNotes <= maxNotes && effectiveNbNotes != nbNotes) {
         abortCurrentNote(frame);
         effectiveNbNotes = nbNotes;
       }
