@@ -314,7 +314,6 @@ protected:
     case kStart:
       // only effectively start if waiting for it
       if (start == false && value != start) {
-        d_stdout("new start");
         if (!isRunning(status)) {
           newGame();
         }
@@ -368,7 +367,6 @@ protected:
   // frame: frame of the event in the buffer
   void abortCurrentNote(uint32_t frame=0) {
     if (curNote >= 0) {
-      d_stdout("kill previous note %d at channel %d", curNote, curChannel);
       sendNoteOff(curNote, curChannel, frame);
       curNote = -1;
     }
@@ -384,20 +382,17 @@ protected:
     if (note < 0) {
       note += interval;
     }
-    d_stdout("shiftnote: %d", note + effectiveRoot);
     // shift back compared to root
     return note + effectiveRoot;
   }
 
   // user playing notes, shifting note to interval of interest.  keep channel and velocity for user during pass-through
   void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
-    d_stdout("NoteOn %d, channel %d, frame %d", note, channel, frame);
     // Tries to be as smart as possible, if the input note is out of range consider that the position is just shifted (user might not have the correct octave configured)
     note = shiftNote(note); 
     
     // while the game is not running we can hit notes to try-out
     if (!isRunning(status)) {
-      d_stdout("not running, pass it");
       // disable any currently playing note -- i.e. monophonic
       abortCurrentNote(frame);
       sendNoteOn(note, velocity, channel, frame);
@@ -406,26 +401,21 @@ protected:
     }
     // only pass through during playing until last note, keep all info
     else if (isPlaying(status) && (int) stepN < round) {
-      d_stdout("pass it");
       // disable any currently playing note -- i.e. monophonic
       if (curNote >= 0) {
-        d_stdout("kill previous note %d", curNote);
         sendNoteOff(curNote, channel, frame);
       }
       sendNoteOn(note, velocity, channel, frame);
       curNote = note;
       curChannel = channel;
       if (stepN < MAX_ROUND && curNote == sequence[stepN]) {
-        d_stdout("correct");
         status = PLAYING_CORRECT;
         stepN++;
       }
       else {
-        d_stdout("incorrect. current miss: %d / %d", nbMiss, maxMiss);
         status = PLAYING_INCORRECT;
         nbMiss++;
         if (nbMiss > maxMiss) {
-          d_stdout("game over!");
           status = PLAYING_OVER;
         }
       }
@@ -434,19 +424,16 @@ protected:
 
   // will detect new round upon note off of last playing
   void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
-    d_stdout("NoteOff %d, channel %d, frame %d", note, channel, frame);
     // shift here is well
     note = shiftNote(note);
 
     // do not change status in-between games, just pass-through note off events
     if (!isRunning(status)) {
-      d_stdout("not running, pass it");
       curNote = -1;
       sendNoteOff(note, channel, frame);
     }
     // while playing check if round is over
     else if (isPlaying(status) || status == PLAYING_OVER) {
-      d_stdout("pass it");
       sendNoteOff(note, channel, frame);
       // take into account for play only if we turn off current note (we might also release part of a chord)
       if (note == curNote) {
@@ -463,7 +450,6 @@ protected:
           status = PLAYING_WAIT;
           // time for new round
           if ((int) stepN >= round) {
-            d_stdout("playing over");
             newRound();
           }
         }
@@ -473,7 +459,6 @@ protected:
   }
 
   void newGame() {
-    d_stdout("new game");
     reset();
     status = STARTING;
     // reset counters
@@ -483,7 +468,6 @@ protected:
 
   // starting new instructions
   void newRound() {
-    d_stdout("new round");
     status = INSTRUCTIONS;
     stepN = 0;
     // draw another note
@@ -494,7 +478,6 @@ protected:
     if (roundsForMiss > 0 && round - lastRFM >= roundsForMiss) {
       lastRFM = round;
       maxMiss++;
-      d_stdout("grant a new miss!. current miss: %d / %d", nbMiss, maxMiss);
     }
     // increase round last, sequence < round
     round++;
@@ -503,7 +486,6 @@ protected:
   // draw another note to the sequence
   void addNote() {
     if (round >= MAX_ROUND) {
-      d_stdout("max round reached!");
       status = GAMEOVER;
     }
     else if (round >= 0) {
@@ -531,17 +513,14 @@ protected:
   // playing next note in the sequence
   // frame: frame of the event in the buffer
   void nextNote(uint32_t frame=0) {
-    d_stdout("instruction %d", stepN);
     // reached end of sequence, user's turn
     if((int) stepN >= round) {
-      d_stdout("instruction reached sequence");
       status = PLAYING_WAIT;
       // reset counter for user
       stepN = 0;
     }
     else if (stepN < MAX_ROUND) {
       curNote = sequence[stepN];
-      d_stdout("next note %d", curNote);
       if (curNote >= 0) {
         // first channel and full velocity by default
         curChannel = 0;
@@ -592,7 +571,6 @@ protected:
         // displaying note, wait to turn it off
         if (curNote >= 0) {
           if (elapsedTime >= NOTE_DURATION) {
-            d_stdout("turn off note");
             lastTime = curTime;
             abortCurrentNote(frame + i);
           }
@@ -600,7 +578,6 @@ protected:
         // test if we should start new note
         else {
           if (elapsedTime >= NOTE_INTERVAL) {
-            d_stdout("go note");
             lastTime = curTime;
             nextNote(frame + i);
           }
@@ -615,7 +592,6 @@ protected:
 
   // reset inner state upon new game
   void reset() {
-    d_stdout("reset");
     // init array
     for (int i = 0; i < MAX_ROUND; i++) {
       sequence[i] = -1;
