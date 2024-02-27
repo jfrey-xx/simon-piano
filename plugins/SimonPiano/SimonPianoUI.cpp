@@ -165,8 +165,9 @@ protected:
       ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
       // specify our own padding to better scale and know it
       ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, winPadding);
-      // we only use one window, will take all space and hide controls
-      ImGui::Begin("Demo window", NULL, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
+      // we only use one window, will take all space and hide controls except for scroll bar if necessary
+      ImGui::Begin("Demo window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
       // scale UI
       ImGui::SetWindowFontScale(scaleFactor);
 
