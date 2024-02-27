@@ -9,7 +9,6 @@ Only note on/off messages are passed through.
 
 # TODO
 
-- configurable "jokers", can have one error every xx note
 - debounce for MIDI input?
 - someday: a version with chords?
 
