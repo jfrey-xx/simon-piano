@@ -223,6 +223,7 @@ protected:
       }
 
       // same for number of notes/keys
+      // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or inscrease upon changing root)
       int uiNbNotes = nbNotes;
       ImGui::SliderInt("Number of keys", &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
       if (uiNbNotes != nbNotes) {
@@ -332,7 +333,13 @@ private:
     uint note = rootKey;
     for (uint i = 0; i < nbKeys; i++) { 
       if(isKeyWhite(note)) {
-	colCurKey = colWhiteKey;
+	// dimm key if not in scale and option set
+	if (shallNotPass && !scale[note % 12]) {
+	  colCurKey = colWhiteKeyDimmed;
+	}
+	else {
+	  colCurKey = colWhiteKey;
+	}
 	// this note currently active, special color
 	if ((int)note == curNote) {
 	  switch(status) {
@@ -367,7 +374,13 @@ private:
 	curPos.x += whiteKeySize.x + spacing.x;
       }
       else {
-	colCurKey = colBlackKey;
+	// dimm key if not in scale and option set
+	if (shallNotPass && !scale[note % 12]) {
+	  colCurKey = colBlackKeyDimmed;
+	}
+	else {
+	  colCurKey = colBlackKey;
+	}
 	// this note currently active, special color
 	if ((int)note == curNote) {
 	  switch(status) {
