@@ -17,7 +17,7 @@
 #define DISTRHO_UI_CUSTOM_INCLUDE_PATH "DearImGui.hpp"
 #define DISTRHO_UI_CUSTOM_WIDGET_TYPE DGL_NAMESPACE::ImGuiTopLevelWidget
 #define DISTRHO_UI_DEFAULT_WIDTH 600
-#define DISTRHO_UI_DEFAULT_HEIGHT 460 
+#define DISTRHO_UI_DEFAULT_HEIGHT 500
 #define DISTRHO_UI_USER_RESIZABLE 1
 #define DISTRHO_UI_URI DISTRHO_PLUGIN_URI "#UI"
 
@@ -39,6 +39,7 @@ enum Parameters {
     kScaleA,
     kScaleAs,
     kScaleB,
+    kShallNotPass,
     kRoundsForMiss,
 
     // output parameter from here

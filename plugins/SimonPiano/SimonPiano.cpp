@@ -95,6 +95,18 @@ protected:
       parameter.ranges.min = params[index].min;
       parameter.ranges.max = params[index].max;
       break;
+    case kShallNotPass:
+      // notes outside scale are not take into account
+      parameter.hints = kParameterIsAutomatable|kParameterIsBoolean;
+      parameter.name = "Shall not pass";
+      parameter.shortName = "no pass";
+      parameter.symbol = "shallnotpass";
+      parameter.unit = "";
+      parameter.ranges.def = params[index].def;
+      parameter.ranges.min = params[index].min;
+      parameter.ranges.max = params[index].max;
+      break;
+
     case kRoundsForMiss:
       // how many rounds to grant a new miss. 0 to disable.
       parameter.hints = kParameterIsInteger | kParameterIsAutomatable;
@@ -264,6 +276,8 @@ protected:
         }
       }
       return 0.9;
+    case kShallNotPass:
+      return shallNotPass;
     case kRoundsForMiss:
       return roundsForMiss;
     case kEffectiveRoot:
@@ -345,6 +359,9 @@ protected:
         }
       }
       break;
+    case kShallNotPass:
+      shallNotPass = value;
+      break;
     case kRoundsForMiss:
       roundsForMiss = value;
       break;
@@ -390,6 +407,11 @@ protected:
   void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
     // Tries to be as smart as possible, if the input note is out of range consider that the position is just shifted (user might not have the correct octave configured)
     note = shiftNote(note); 
+
+    // ignore the note if option set and out of range
+    if (shallNotPass && !effectiveScale[note % 12]) {
+      return;
+    }
     
     // while the game is not running we can hit notes to try-out
     if (!isRunning(status)) {
@@ -426,6 +448,8 @@ protected:
   void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
     // shift here is well
     note = shiftNote(note);
+
+    // NOTE: even if note on were filtered with shallNotPass, process everything here, we could well have a note off event after the option was switched o
 
     // do not change status in-between games, just pass-through note off events
     if (!isRunning(status)) {
@@ -615,6 +639,8 @@ private:
   int curNote = params[kCurNote].def;
   bool scale[12];
   bool effectiveScale[12];
+  // if notes outside scale should go through at all
+  bool shallNotPass = params[kShallNotPass].def;
   // how many notes are missed in this round
   int nbMiss = 0;
   // max miss before game over

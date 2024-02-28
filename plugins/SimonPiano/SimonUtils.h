@@ -49,6 +49,7 @@ const ParameterRanges params[kParameterCount] =
      ParameterRanges(1, 0, 1), // scale
      ParameterRanges(1, 0, 1), // scale
      ParameterRanges(1, 0, 1), // scale
+     ParameterRanges(0, 0, 1), // shall not pass
      ParameterRanges(1, 0, MAX_ROUND), // rounds for miss
      ParameterRanges(60, 0, 127), // effective root
      ParameterRanges(12, 1, 128), // effective number of notes

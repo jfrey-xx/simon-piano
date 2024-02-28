@@ -109,6 +109,9 @@ protected:
 	  }
 	}
 	break;
+      case kShallNotPass:
+	shallNotPass = value;
+	break;
       case kRoundsForMiss:
 	roundsForMiss = value;
 	break;
@@ -234,6 +237,14 @@ protected:
       }
       ImGui::Spacing();
 
+      // option about letting notes through on not
+      bool uiShallNotPass = shallNotPass;
+      ImGui::Checkbox("Shall not pass", &uiShallNotPass);
+      if (uiShallNotPass != shallNotPass) {
+	shallNotPass = uiShallNotPass;
+	setParameterValue(kShallNotPass, shallNotPass);
+      }
+
       // sync rounds for miss
       int uiRoundsForMiss = roundsForMiss;
       ImGui::SliderInt("Rounds for miss", &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
@@ -273,6 +284,7 @@ private:
   int nbMiss = params[kNbMiss].def;
   int maxMiss = params[kMaxMiss].def;
   int maxRound = params[kMaxRound].def;
+  bool shallNotPass = params[kShallNotPass].def;
   
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
