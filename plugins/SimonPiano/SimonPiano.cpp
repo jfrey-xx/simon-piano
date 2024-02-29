@@ -453,8 +453,12 @@ protected:
 
     // do not change status in-between games, just pass-through note off events
     if (!isRunning(status)) {
-      curNote = -1;
-      sendNoteOff(note, channel, frame);
+
+      // since we are monophonic, only consider note off of current 
+      if (note == curNote) {
+        curNote = -1;
+        sendNoteOff(note, channel, frame);
+      }
     }
     // while playing check if round is over
     else if (isPlaying(status) || status == PLAYING_OVER) {
@@ -492,6 +496,8 @@ protected:
 
   // starting new instructions
   void newRound() {
+    // here curNote set to -1 instead of newGame and reset, to be called within run() and have MIDI sent
+    abortCurrentNote();
     status = INSTRUCTIONS;
     stepN = 0;
     // draw another note
@@ -615,12 +621,12 @@ protected:
   };
 
   // reset inner state upon new game
+  // NOTE: *not* resetting curNote as is can be needed to abort later on, reset being called outside of run (
   void reset() {
     // init array
     for (int i = 0; i < MAX_ROUND; i++) {
       sequence[i] = -1;
     }
-    setParameterValue(kCurNote, -1);
     round = 0;
     stepN = 0;
     nbMiss = 0;
