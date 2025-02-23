@@ -87,7 +87,7 @@ protected:
         if (numScale >= 0 && numScale < 12) {
           parameter.name = scaleNotes[numScale];
           parameter.shortName = scaleNotes[numScale];
-          parameter.symbol = scaleNotes[numScale];
+          parameter.symbol = scaleNotesSymbols[numScale];
         }
       }
       parameter.unit = "";
@@ -201,7 +201,7 @@ protected:
         if (numScale >= 0 && numScale < 12) {
           parameter.name = String("Effective ") + scaleNotes[numScale];
           parameter.shortName = String("eff ") + scaleNotes[numScale];
-          parameter.symbol = String("effective") + scaleNotes[numScale];
+          parameter.symbol = String("effective") + scaleNotesSymbols[numScale];
           }
       }
       parameter.unit = "";
@@ -643,8 +643,8 @@ private:
   int effectiveRoot =  params[kEffectiveRoot].def;
   int effectiveNbNotes =  params[kEffectiveNbNotes].def;
   int curNote = params[kCurNote].def;
-  bool scale[12];
-  bool effectiveScale[12];
+  bool scale[12] {true};
+  bool effectiveScale[12] {true};
   // if notes outside scale should go through at all
   bool shallNotPass = params[kShallNotPass].def;
   // how many notes are missed in this round
