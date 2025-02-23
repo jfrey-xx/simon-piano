@@ -2,13 +2,12 @@
 #include "DistrhoUI.hpp"
 #include "SimonUtils.h"
 
-START_NAMESPACE_DISTRHO
+#include "pugl/gl.h"
 #define RLGL_IMPLEMENTATION
 
+START_NAMESPACE_DISTRHO
 #include "rlgl.h"
 #include "raymath.h" 
-
-
 #define RED        (Color){ 230, 41, 55, 255 }     // Red
 #define RAYWHITE   (Color){ 245, 245, 245, 255 }   // My own White (raylib logo)
 #define DARKGRAY   (Color){ 80, 80, 80, 255 }      // Dark Gray
@@ -31,6 +30,131 @@ typedef struct Camera {
     int projection;         // Camera projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
 } Camera;
 
+// Matrix, 4x4 components, column major, OpenGL style, right-handed
+/*typedef struct MatrixR {
+    float m0, m4, m8, m12;  // Matrix first row (4 components)
+    float m1, m5, m9, m13;  // Matrix second row (4 components)
+    float m2, m6, m10, m14; // Matrix third row (4 components)
+    float m3, m7, m11, m15; // Matrix fourth row (4 components)
+    } MatrixR; */
+
+
+// Draw cube wires
+static void DrawCubeWires(Vector3 position, float width, float height, float length, Color color)
+{
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+
+    rlPushMatrix();
+
+        rlTranslatef(position.x, position.y, position.z);
+        //rlRotatef(45, 0, 1, 0);
+
+        rlBegin(RL_LINES);
+            rlColor4ub(color.r, color.g, color.b, color.a);
+
+            // Front Face -----------------------------------------------------
+            // Bottom Line
+            rlVertex3f(x-width/2, y-height/2, z+length/2);  // Bottom Left
+            rlVertex3f(x+width/2, y-height/2, z+length/2);  // Bottom Right
+
+            // Left Line
+            rlVertex3f(x+width/2, y-height/2, z+length/2);  // Bottom Right
+            rlVertex3f(x+width/2, y+height/2, z+length/2);  // Top Right
+
+            // Top Line
+            rlVertex3f(x+width/2, y+height/2, z+length/2);  // Top Right
+            rlVertex3f(x-width/2, y+height/2, z+length/2);  // Top Left
+
+            // Right Line
+            rlVertex3f(x-width/2, y+height/2, z+length/2);  // Top Left
+            rlVertex3f(x-width/2, y-height/2, z+length/2);  // Bottom Left
+
+            // Back Face ------------------------------------------------------
+            // Bottom Line
+            rlVertex3f(x-width/2, y-height/2, z-length/2);  // Bottom Left
+            rlVertex3f(x+width/2, y-height/2, z-length/2);  // Bottom Right
+
+            // Left Line
+            rlVertex3f(x+width/2, y-height/2, z-length/2);  // Bottom Right
+            rlVertex3f(x+width/2, y+height/2, z-length/2);  // Top Right
+
+            // Top Line
+            rlVertex3f(x+width/2, y+height/2, z-length/2);  // Top Right
+            rlVertex3f(x-width/2, y+height/2, z-length/2);  // Top Left
+
+            // Right Line
+            rlVertex3f(x-width/2, y+height/2, z-length/2);  // Top Left
+            rlVertex3f(x-width/2, y-height/2, z-length/2);  // Bottom Left
+
+            // Top Face -------------------------------------------------------
+            // Left Line
+            rlVertex3f(x-width/2, y+height/2, z+length/2);  // Top Left Front
+            rlVertex3f(x-width/2, y+height/2, z-length/2);  // Top Left Back
+
+            // Right Line
+            rlVertex3f(x+width/2, y+height/2, z+length/2);  // Top Right Front
+            rlVertex3f(x+width/2, y+height/2, z-length/2);  // Top Right Back
+
+            // Bottom Face  ---------------------------------------------------
+            // Left Line
+            rlVertex3f(x-width/2, y-height/2, z+length/2);  // Top Left Front
+            rlVertex3f(x-width/2, y-height/2, z-length/2);  // Top Left Back
+
+            // Right Line
+            rlVertex3f(x+width/2, y-height/2, z+length/2);  // Top Right Front
+            rlVertex3f(x+width/2, y-height/2, z-length/2);  // Top Right Back
+        rlEnd();
+    rlPopMatrix();
+}
+
+static void DrawRectangleV(Vector2 position, Vector2 size, Color color)
+{
+    rlBegin(RL_TRIANGLES);
+        rlColor4ub(color.r, color.g, color.b, color.a);
+
+        rlVertex2f(position.x, position.y);
+        rlVertex2f(position.x, position.y + size.y);
+        rlVertex2f(position.x + size.x, position.y + size.y);
+
+        rlVertex2f(position.x, position.y);
+        rlVertex2f(position.x + size.x, position.y + size.y);
+        rlVertex2f(position.x + size.x, position.y);
+    rlEnd();
+}
+
+// Draw a grid centered at (0, 0, 0)
+static void DrawGrid(int slices, float spacing)
+{
+    int halfSlices = slices / 2;
+
+    rlBegin(RL_LINES);
+        for (int i = -halfSlices; i <= halfSlices; i++)
+        {
+            if (i == 0)
+            {
+                rlColor3f(0.5f, 0.5f, 0.5f);
+                rlColor3f(0.5f, 0.5f, 0.5f);
+                rlColor3f(0.5f, 0.5f, 0.5f);
+                rlColor3f(0.5f, 0.5f, 0.5f);
+            }
+            else
+            {
+                rlColor3f(0.75f, 0.75f, 0.75f);
+                rlColor3f(0.75f, 0.75f, 0.75f);
+                rlColor3f(0.75f, 0.75f, 0.75f);
+                rlColor3f(0.75f, 0.75f, 0.75f);
+            }
+
+            rlVertex3f((float)i*spacing, 0.0f, (float)-halfSlices*spacing);
+            rlVertex3f((float)i*spacing, 0.0f, (float)halfSlices*spacing);
+
+            rlVertex3f((float)-halfSlices*spacing, 0.0f, (float)i*spacing);
+            rlVertex3f((float)halfSlices*spacing, 0.0f, (float)i*spacing);
+        }
+    rlEnd();
+}
 
 // Draw cube
 // NOTE: Cube position is the center position
@@ -107,7 +231,6 @@ static void DrawCube(Vector3 position, float width, float height, float length, 
     rlPopMatrix();
 }
 
-
 // --------------------------------------------------------------------------------------------------------------------
 
 class SimonPianoUI : public UI
@@ -136,6 +259,23 @@ public:
             setSize(width, height);
         }
 
+            const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+            const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+
+	    rlLoadExtensions((void*)puglGetProcAddress);
+
+	    rlglInit(width, height);
+
+    // Initialize viewport and internal projection/modelview matrices
+	    rlViewport(0, 0, width, height);
+	    rlMatrixMode(RL_PROJECTION);                        // Switch to PROJECTION matrix
+	    rlLoadIdentity();                                   // Reset current matrix (PROJECTION)
+	    rlOrtho(0, width, height, 0, 0.0f, 1.0f); // Orthographic projection with top-left corner at (0,0)
+	    rlMatrixMode(RL_MODELVIEW);                         // Switch back to MODELVIEW matrix
+	    rlLoadIdentity();                                   // Reset current matrix (MODELVIEW)
+
+	    rlClearColor(245, 245, 245, 255);                   // Define clear color
+	    rlEnableDepthTest();     
 
 
     // Define the camera to look into our 3d world
@@ -228,10 +368,35 @@ protected:
       ImGui specific onDisplay function.
     */
   //void onTrueDisplay() override
-    void onImGuiDisplay() override
+   void onDisplay() override
+  //  void onImGuiDisplay() override
     {
+        rlClearScreenBuffers();             // Clear current framebuffer
+	Matrix matProj = MatrixPerspective((double)(camera.fovy*DEG2RAD), (double)getWidth()/(double)getHeight(), 0.01, 1000.0);
+            Matrix matView = MatrixLookAt(camera.position, camera.target, camera.up);
 
-            DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
+            rlSetMatrixModelview(matView);    // Set internal modelview matrix (default shader)
+            rlSetMatrixProjection(matProj);   // Set internal projection matrix (default shader)
+
+	    
+      DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
+         DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, RAYWHITE);
+            DrawGrid(10, 1.0f);
+
+
+        rlDrawRenderBatchActive();
+
+	matProj = MatrixOrtho(0.0, getWidth(), getHeight(), 0.0, 0.0, 1.0);
+            matView = MatrixIdentity();
+
+            rlSetMatrixModelview(matView);    // Set internal modelview matrix (default shader)
+                       rlSetMatrixProjection(matProj);   // Set internal projection matrix (default shader)
+
+	   DrawRectangleV((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
+
+            // Draw internal render batch buffers (2D data)
+            rlDrawRenderBatchActive();
+            //-----------------------------------------------
 
 
       return;
