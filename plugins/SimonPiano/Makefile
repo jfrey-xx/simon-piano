@@ -14,7 +14,7 @@ FILES_DSP = \
 
 FILES_UI = \
 	SimonPianoUI.cpp \
-	../../dpf-widgets/opengl/Ray.cpp
+	../../dpf-widgets/opengl/DearImGui.cpp
 
 # --------------------------------------------------------------
 # Do some magic
