@@ -14,7 +14,7 @@ FILES_DSP = \
 
 FILES_UI = \
 	SimonPianoUI.cpp \
-	../../dpf-widgets/opengl/DearImGui.cpp
+	../../dpf-widgets/opengl/Ray.cpp
 
 # --------------------------------------------------------------
 # Do some magic
@@ -23,8 +23,8 @@ include ../../dpf/Makefile.plugins.mk
 
 # --------------------------------------------------------------
 # Adding  custom libs
-BUILD_CXX_FLAGS += -I../../src -I../../dpf-widgets/opengl
-
+BUILD_CXX_FLAGS += -I../../src -I../../ray/include -I../../dpf-widgets/opengl
+LINK_FLAGS += ../../ray/lib/libraylib.a
 # --------------------------------------------------------------
 # Select plugins
 
