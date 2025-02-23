@@ -46,7 +46,10 @@ public:
     SimonPianoUI()
         : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT)
     {
-        const double scaleFactor = getScaleFactor();
+        double scaleFactor = getScaleFactor();
+	if (scaleFactor <= 0.0) {
+	  scaleFactor = 1.0;
+	}
 
         if (d_isEqual(scaleFactor, 1.0))
         {
@@ -141,6 +144,9 @@ protected:
 
       // compute base width/height
       double scaleFactor = getScaleFactor();
+      if (scaleFactor <= 0.0) {
+	scaleFactor = 1.0;
+      }
       uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
       uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
 

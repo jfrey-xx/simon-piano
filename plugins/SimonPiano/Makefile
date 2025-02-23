@@ -29,9 +29,9 @@ BUILD_CXX_FLAGS += -I../../src -I../../dpf-widgets/opengl
 # Select plugins
 
 TARGETS += jack
-#TARGETS += lv2_sep
-#TARGETS += vst2
-#TARGETS += vst3
-#TARGETS += clap
+TARGETS += lv2_sep
+TARGETS += vst2
+TARGETS += vst3
+TARGETS += clap
 
 all: $(TARGETS)
