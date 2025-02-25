@@ -7,9 +7,11 @@
 START_NAMESPACE_DISTRHO
 //#include "pugl/gl.h"
 #define RAYLIB_IMPLEMENTATION
+//#define RLGL_IMPLEMENTATION
 #include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h" 
+
 #define RED        (Color){ 230, 41, 55, 255 }     // Red
 #define RAYWHITE   (Color){ 245, 245, 245, 255 }   // My own White (raylib logo)
 #define DARKGRAY   (Color){ 80, 80, 80, 255 }      // Dark Gray
@@ -262,11 +264,13 @@ public:
 
         InitWindow(800, 450, "raylib [core] example - basic window");
 
-            /*
+            
 	    //rlLoadExtensions((void*)puglGetProcAddress);
+            const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+            const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
 
-	    rlglInit(width, height);
-
+            // rlglInit(width, height);
+            /*
     // Initialize viewport and internal projection/modelview matrices
 	    rlViewport(0, 0, width, height);
 	    rlMatrixMode(RL_PROJECTION);                        // Switch to PROJECTION matrix
@@ -371,16 +375,20 @@ protected:
   //void onTrueDisplay() override
    void onDisplay() override
     {
-        return;
+
+       //----------------------------------------------------------------------------------
+
         BeginDrawing();
 
         ClearBackground(WHITE);
-        //DrawRectangleVB((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
+            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+            //        DrawRectangleVB((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
 
         EndDrawing();
 
 
     }
+    /*
    void onDisplaytoto()
   //  void onImGuiDisplay() override
     {
@@ -417,6 +425,7 @@ protected:
       
     }
 
+    */
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
