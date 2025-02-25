@@ -76,6 +76,8 @@ const ParameterRanges params[kParameterCount] =
 
 // names for notes
 static const char* const scaleNotes[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+// tune for illegal symbols
+static const char* const scaleNotesSymbols[12] = {"C", "Cs", "D", "Ds", "E", "F", "Fs", "G", "Gs", "A", "As", "B"};
 
 // implementing our own rand/srand following basic example from their man page, so as to have a separate sequence
 class Rando {
