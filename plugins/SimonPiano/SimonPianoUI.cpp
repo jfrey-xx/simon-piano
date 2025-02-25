@@ -2,10 +2,12 @@
 #include "DistrhoUI.hpp"
 #include "SimonUtils.h"
 
-#include "pugl/gl.h"
-#define RLGL_IMPLEMENTATION
+//#define RLGL_IMPLEMENTATION
 
 START_NAMESPACE_DISTRHO
+//#include "pugl/gl.h"
+#define RAYLIB_IMPLEMENTATION
+#include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h" 
 #define RED        (Color){ 230, 41, 55, 255 }     // Red
@@ -14,21 +16,21 @@ START_NAMESPACE_DISTRHO
 
 
 // Color, 4 components, R8G8B8A8 (32bit)
-typedef struct Color {
+typedef struct ColorB {
     unsigned char r;        // Color red value
     unsigned char g;        // Color green value
     unsigned char b;        // Color blue value
     unsigned char a;        // Color alpha value
-} Color;
+} ColorB;
 
 // Camera type, defines a camera position/orientation in 3d space
-typedef struct Camera {
+typedef struct CameraB {
     Vector3 position;       // Camera position
     Vector3 target;         // Camera target it looks-at
     Vector3 up;             // Camera up vector (rotation over its axis)
     float fovy;             // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
     int projection;         // Camera projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
-} Camera;
+} CameraB;
 
 // Matrix, 4x4 components, column major, OpenGL style, right-handed
 /*typedef struct MatrixR {
@@ -40,7 +42,7 @@ typedef struct Camera {
 
 
 // Draw cube wires
-static void DrawCubeWires(Vector3 position, float width, float height, float length, Color color)
+static void DrawCubeWiresB(Vector3 position, float width, float height, float length, Color color)
 {
     float x = 0.0f;
     float y = 0.0f;
@@ -109,7 +111,7 @@ static void DrawCubeWires(Vector3 position, float width, float height, float len
     rlPopMatrix();
 }
 
-static void DrawRectangleV(Vector2 position, Vector2 size, Color color)
+static void DrawRectangleVB(Vector2 position, Vector2 size, Color color)
 {
     rlBegin(RL_TRIANGLES);
         rlColor4ub(color.r, color.g, color.b, color.a);
@@ -125,7 +127,7 @@ static void DrawRectangleV(Vector2 position, Vector2 size, Color color)
 }
 
 // Draw a grid centered at (0, 0, 0)
-static void DrawGrid(int slices, float spacing)
+static void DrawGridB(int slices, float spacing)
 {
     int halfSlices = slices / 2;
 
@@ -158,7 +160,7 @@ static void DrawGrid(int slices, float spacing)
 
 // Draw cube
 // NOTE: Cube position is the center position
-static void DrawCube(Vector3 position, float width, float height, float length, Color color)
+static void DrawCubeB(Vector3 position, float width, float height, float length, Color color)
 {
     float x = 0.0f;
     float y = 0.0f;
@@ -244,7 +246,6 @@ public:
     SimonPianoUI()
         : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT)
     {
-      // InitWindow(800, 450, "raylib [core] example - basic window");
         const double scaleFactor = getScaleFactor();
 
         if (d_isEqual(scaleFactor, 1.0))
@@ -259,10 +260,10 @@ public:
             setSize(width, height);
         }
 
-            const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-            const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+        InitWindow(800, 450, "raylib [core] example - basic window");
 
-	    rlLoadExtensions((void*)puglGetProcAddress);
+            /*
+	    //rlLoadExtensions((void*)puglGetProcAddress);
 
 	    rlglInit(width, height);
 
@@ -277,7 +278,7 @@ public:
 	    rlClearColor(245, 245, 245, 255);                   // Define clear color
 	    rlEnableDepthTest();     
 
-
+            */
     // Define the camera to look into our 3d world
     camera = { 0 };
     camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
@@ -369,6 +370,18 @@ protected:
     */
   //void onTrueDisplay() override
    void onDisplay() override
+    {
+        return;
+        BeginDrawing();
+
+        ClearBackground(WHITE);
+        //DrawRectangleVB((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
+
+        EndDrawing();
+
+
+    }
+   void onDisplaytoto()
   //  void onImGuiDisplay() override
     {
         rlClearScreenBuffers();             // Clear current framebuffer
@@ -379,9 +392,9 @@ protected:
             rlSetMatrixProjection(matProj);   // Set internal projection matrix (default shader)
 
 	    
-      DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
-         DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, RAYWHITE);
-            DrawGrid(10, 1.0f);
+      DrawCubeB(cubePosition, 2.0f, 2.0f, 2.0f, RED);
+         DrawCubeWiresB(cubePosition, 2.0f, 2.0f, 2.0f, RAYWHITE);
+            DrawGridB(10, 1.0f);
 
 
         rlDrawRenderBatchActive();
@@ -392,7 +405,7 @@ protected:
             rlSetMatrixModelview(matView);    // Set internal modelview matrix (default shader)
                        rlSetMatrixProjection(matProj);   // Set internal projection matrix (default shader)
 
-	   DrawRectangleV((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
+	   DrawRectangleVB((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
 
             // Draw internal render batch buffers (2D data)
             rlDrawRenderBatchActive();
@@ -407,7 +420,7 @@ protected:
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
-  Camera camera;
+  CameraB camera;
   Vector3 cubePosition;
 
 
