@@ -142,24 +142,44 @@ protected:
       ImGui specific onDisplay function.
     */
   //void onTrueDisplay() override
-   void onnDisplay() 
+   void onDisplay() 
     {
 
        //----------------------------------------------------------------------------------
+   // Define the camera to look into our 3d world
+    Camera3D camera = { 0 };
+    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
+    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.fovy = 45.0f;                                // Camera field-of-view Y
+    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 
-               BeginDrawing();
+    Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
+      UpdateCamera(&camera, CAMERA_FREE);
 
-                ClearBackground(WHITE);
-        //   DrawText("Congrats! You created your first window!", 190, 200, 20, RED);
-            //        DrawRectangleVB((Vector2){ 10.0f, 10.0f }, (Vector2){ 780.0f, 20.0f }, RED);
+     BeginDrawing();
 
-                EndDrawing();
+                 ClearBackground(RAYWHITE);
+
+            BeginMode3D(camera);
+
+                DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
+                DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, MAROON);
+
+                DrawGrid(10, 1.0f);
+
+            EndMode3D();
+
+
+        EndDrawing();
+
 
 
     }
-   void onDisplay()
+   void onnDisplay()
   //  void onImGuiDisplay() override
     {
+        d_stdout("on display \n");
                BeginDrawing();
                 ClearBackground(WHITE);
                 EndDrawing();
@@ -223,3 +243,4 @@ UI* createUI()
 // --------------------------------------------------------------------------------------------------------------------
 
 END_NAMESPACE_DISTRHO
+ 
