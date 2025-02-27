@@ -1,21 +1,18 @@
 
 #include "DistrhoUI.hpp"
 #include "SimonUtils.h"
-#include <iostream>
 
 START_NAMESPACE_DISTRHO
-//#include "pugl/gl.h"
 
 #include "raylib.h"
-//#include "raymath.h"                // Vector2, Vector3, Quaternion and Matrix  functionality
-//#define RLGL_IMPLEMENTATION
-//#include "rlgl.h"
- //#include "raymath.h" 
- 
+#include "rlgl.h"
+
+// how often no refresh on idle state, in Hz. 0 to disable animation during idle state
+#define UI_REFRESH_RATE 30
 
 // --------------------------------------------------------------------------------------------------------------------
 
-class SimonPianoUI : public UI
+class SimonPianoUI : public UI, public IdleCallback
 {
 public:
    /**
@@ -24,47 +21,48 @@ public:
     */
 
     SimonPianoUI()
-        : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT)
+      : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
     {
-        const double scaleFactor = getScaleFactor();
+        // compute actual dimensions of the window
+        double scaleFactor = getScaleFactor();
+	if (scaleFactor <= 0.0) {
+	  scaleFactor = 1.0;
+	}
+	const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+	const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+	setGeometryConstraints(width, height);
 
-        if (d_isEqual(scaleFactor, 1.0))
+	// we have to resize window size if a scale factor is to be applied
+        if (!d_isEqual(scaleFactor, 1.0))
         {
-            setGeometryConstraints(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT);
-        }
-        else
-        {
-            const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-            const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
-            setGeometryConstraints(width, height);
             setSize(width, height);
         }
 
-
-            
-	    //rlLoadExtensions((void*)puglGetProcAddress);
-            const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-            const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
-
-            //             rlglInit(50, 50);
-            InitWindow(width,height, "raylib [core] example - basic window");
-            
-    // Initialize viewport and internal projection/modelview matrices
-             //rlViewport(0, 0, width, height);
-	    //rlMatrixMode(RL_PROJECTION);                        // Switch to PROJECTION matrix
-	    //rlLoadIdentity();                                   // Reset current matrix (PROJECTION)
-	    //rlOrtho(0, width, height, 0, 0.0f, 1.0f); // Orthographic projection with top-left corner at (0,0)
-	    //rlMatrixMode(RL_MODELVIEW);                         // Switch back to MODELVIEW matrix
-	    //rlLoadIdentity();                                   // Reset current matrix (MODELVIEW)
-
-             // rlClearColor(245, 245, 245, 255);                   // Define clear color
-                    //	    rlEnableDepthTest();     
+        // init raylib -- unused title with DPF platform
+	InitWindow(width,height, "");
+	// always animate
+	if (UI_REFRESH_RATE > 0) {
+	  // method called every xx milliseconds
+	  int refreshTime = 1000/UI_REFRESH_RATE;
+	  addIdleCallback(this, refreshTime);
+	}
 
 
-
-
-
+	// Define the camera to look into our 3d world
+	camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
+	camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
+	camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+	camera.fovy = 45.0f;                                // Camera field-of-view Y
+	camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
     }
+
+
+  ~SimonPianoUI() {
+    // cleanup
+    if (UI_REFRESH_RATE > 0) {
+      removeIdleCallback(this);
+    }
+  }
 
 protected:
     // ----------------------------------------------------------------------------------------------------------------
@@ -141,80 +139,56 @@ protected:
    /**
       ImGui specific onDisplay function.
     */
+
+  void idleCallback() override
+  {
+    draw();
+    // force display refresh
+    repaint();
+  }
+
   //void onTrueDisplay() override
-   void onDisplay() 
+   void onDisplay() override 
     {
+      draw();
+    }
 
-       //----------------------------------------------------------------------------------
-   // Define the camera to look into our 3d world
-    Camera3D camera = { 0 };
-    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
-    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-    camera.fovy = 45.0f;                                // Camera field-of-view Y
-    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
-
+  // actual drawing
+  void draw() {
+    
+    // dummy animation
     Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
-      UpdateCamera(&camera, CAMERA_FREE);
+    
+    BeginDrawing();
+    
+    ClearBackground(RAYWHITE);
+    
+    BeginMode3D(camera);
+    // rotation animation
+    rlPushMatrix();
+    static int r = 0;
+    r++;
+    // rotate along <1,0,0> x-axis
+    rlRotatef(r, 1, 0, 0);
+    DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
+    rlPopMatrix();
+    DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, MAROON);
+    
+    DrawGrid(10, 1.0f);
+    
+    EndMode3D();
+     
+    EndDrawing();
 
-     BeginDrawing();
-
-                 ClearBackground(RAYWHITE);
-
-            BeginMode3D(camera);
-
-                DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
-                DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, MAROON);
-
-                DrawGrid(10, 1.0f);
-
-            EndMode3D();
-
-
-        EndDrawing();
-
-
-
-    }
-   void onnDisplay()
-  //  void onImGuiDisplay() override
-    {
-        d_stdout("on display \n");
-               BeginDrawing();
-                ClearBackground(WHITE);
-                EndDrawing();
-                       static int toto = 0;
-                       static bool tata = false;
-                       toto++;
-                       if (toto > 20) {
-                           toto = 0;
-                       }
-                       else if (toto > 10) {
-                           ClearBackground(RED);
-                           //                                 rlClearColor(245, 245, 245, 255);                   // Define clear color
-                       }
-                       else if (toto > 20) {
-                            toto = 0;
-                       }
-                       else {
-                ClearBackground(WHITE);
-                           //             rlClearColor(245, 0, 245, 255);                   // Define clear color
-                       }
-
-            // Draw internal render batch buffers (2D data)
-            //-----------------------------------------------
-
-
-      return;
-
-      
-    }
+  }
 
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
 
 
+  // ui
+  Camera3D camera;
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;
@@ -228,7 +202,6 @@ private:
   int maxMiss = params[kMaxMiss].def;
   int maxRound = params[kMaxRound].def;
   bool shallNotPass = params[kShallNotPass].def;
-  
   
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPianoUI)
 };
