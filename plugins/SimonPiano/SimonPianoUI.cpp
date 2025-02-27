@@ -136,26 +136,14 @@ protected:
     // ----------------------------------------------------------------------------------------------------------------
     // Widget Callbacks
 
-   /**
-      ImGui specific onDisplay function.
-    */
-
   void idleCallback() override
   {
-    draw();
     // force display refresh
     repaint();
   }
 
-  //void onTrueDisplay() override
    void onDisplay() override 
-    {
-      draw();
-    }
-
-  // actual drawing
-  void draw() {
-    
+  {
     // dummy animation
     Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
     
