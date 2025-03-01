@@ -148,6 +148,28 @@ protected:
   {
     // dummy animation
     Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
+    Vector3 cubeSize = { 2.0f, 2.0f, 2.0f };
+
+    Ray ray = { 0 };                    // Picking line ray
+
+    d_stdout("loop mouse button down 0: %d, 1: %d, 2: %d", IsMouseButtonDown(0), IsMouseButtonDown(1), IsMouseButtonDown(2));
+    d_stdout("loop mouse button pressed 0: %d, 1: %d, 2: %d", IsMouseButtonPressed(0), IsMouseButtonPressed(1), IsMouseButtonPressed(2));
+    d_stdout("loop mouse button released 0: %d, 1: %d, 2: %d", IsMouseButtonReleased(0), IsMouseButtonReleased(1), IsMouseButtonReleased(2));
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+      {
+	if (!collision.hit)
+	  {
+	    ray = GetScreenToWorldRay(GetMousePosition(), camera);
+	    
+	    // Check collision between ray and box
+	    collision = GetRayCollisionBox(ray,
+					   (BoundingBox){(Vector3){ cubePosition.x - cubeSize.x/2, cubePosition.y - cubeSize.y/2, cubePosition.z - cubeSize.z/2 },
+							 (Vector3){ cubePosition.x + cubeSize.x/2, cubePosition.y + cubeSize.y/2, cubePosition.z + cubeSize.z/2 }});
+	  }
+	else collision.hit = false;
+      }
+    
     
     BeginDrawing();
     
@@ -160,9 +182,14 @@ protected:
     r++;
     // rotate along <1,0,0> x-axis
     rlRotatef(r, 1, 0, 0);
-    DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
+    if (collision.hit) {
+      DrawCube(cubePosition, cubeSize.x, cubeSize.y, cubeSize.z, BLUE);
+    }
+    else {
+      DrawCube(cubePosition, cubeSize.x, cubeSize.y, cubeSize.z, RED);
+    }
     rlPopMatrix();
-    DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, MAROON);
+    DrawCubeWires(cubePosition, cubeSize.x, cubeSize.y, cubeSize.z, MAROON);
     
     DrawGrid(10, 1.0f);
     
@@ -211,6 +238,8 @@ private:
 
   // ui
   Camera3D camera;
+  // Ray collision hit info
+  RayCollision collision = { 0 };     
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;
