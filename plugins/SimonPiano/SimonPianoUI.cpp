@@ -4,6 +4,8 @@
 
 START_NAMESPACE_DISTRHO
 
+// we got to enable some extra functions in raylib for us to pass events
+#define PLATFORM_DPF
 #include "raylib.h"
 #include "rlgl.h"
 
@@ -168,6 +170,38 @@ protected:
      
     EndDrawing();
 
+    d_stdout("raylib mouse button down 0: %d, 1: %d, 2: %d", IsMouseButtonDown(0), IsMouseButtonDown(1), IsMouseButtonDown(2));
+    d_stdout("raylib mouse button pressed 0: %d, 1: %d, 2: %d", IsMouseButtonPressed(0), IsMouseButtonPressed(1), IsMouseButtonPressed(2));
+    d_stdout("raylib mouse button released 0: %d, 1: %d, 2: %d", IsMouseButtonReleased(0), IsMouseButtonReleased(1), IsMouseButtonReleased(2));
+
+
+
+    d_stdout("raylib mouse position: %d,%d", GetMouseX(), GetMouseY());
+
+  }
+
+  // mouse move
+  bool onMotion(const MotionEvent& event) override
+  {
+    // unused: event.mod currently active keyboard modifier
+    d_stdout("DPF motion event pos %f,%f, abspos %f,%f",  event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
+    SetMousePosition(event.pos.getX(), event.pos.getY());
+    return false;
+  }
+
+  // mouse press
+  bool onMouse(const MouseEvent& event) override
+  {
+    // unused: event.mod currently active keyboard modifier
+    d_stdout("DPF mouse event button %d, press %d pos %f,%f, abspos %f,%f",  event.button, event.press, event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
+    // mouse button event should start from 1
+    int button = event.button;
+    if (button > 0) {
+      SendMouseEvent(button-1, event.press, event.pos.getX(), event.pos.getY());
+      return false;
+    }
+    // we do not catch a button 0 that should not happen...
+    return true;
   }
 
     // ----------------------------------------------------------------------------------------------------------------
