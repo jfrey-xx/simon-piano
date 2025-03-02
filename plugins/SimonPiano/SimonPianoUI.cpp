@@ -231,6 +231,15 @@ protected:
     return true;
   }
 
+  // resize
+  void onResize(const ResizeEvent& event)
+{
+  // tell that to raylib
+  SetWindowSize(event.size.getWidth(), event.size.getHeight());
+  d_stdout("resize mouse position: %d,%d", GetMouseX(), GetMouseY());
+}
+
+
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
