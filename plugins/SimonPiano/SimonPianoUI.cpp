@@ -8,6 +8,8 @@ START_NAMESPACE_DISTRHO
 #define PLATFORM_DPF
 #include "raylib.h"
 #include "rlgl.h"
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 
 // how often no refresh on idle state, in Hz. 0 to disable animation during idle state
 #define UI_REFRESH_RATE 30
@@ -152,6 +154,9 @@ protected:
 
     Ray ray = { 0 };                    // Picking line ray
 
+    // action either via GUI or directly over the cube
+    // NOTE: click on the GUI will also de-select cube. for testing only...
+    bool butPress = GuiButton( (Rectangle){ 20, 40, 200, 20 }, "Press me!");
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
       {
 	if (!collision.hit)
@@ -166,10 +171,19 @@ protected:
 	else collision.hit = false;
       }
     
+    else if (butPress)
+      {
+	if (!collision.hit)
+	  {
+	    collision.hit = true;
+	  }
+	else collision.hit = false;
+      }
     
     BeginDrawing();
     
     ClearBackground(RAYWHITE);
+
     
     BeginMode3D(camera);
     // rotation animation
