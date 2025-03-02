@@ -152,10 +152,6 @@ protected:
 
     Ray ray = { 0 };                    // Picking line ray
 
-    d_stdout("loop mouse button down 0: %d, 1: %d, 2: %d", IsMouseButtonDown(0), IsMouseButtonDown(1), IsMouseButtonDown(2));
-    d_stdout("loop mouse button pressed 0: %d, 1: %d, 2: %d", IsMouseButtonPressed(0), IsMouseButtonPressed(1), IsMouseButtonPressed(2));
-    d_stdout("loop mouse button released 0: %d, 1: %d, 2: %d", IsMouseButtonReleased(0), IsMouseButtonReleased(1), IsMouseButtonReleased(2));
-
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
       {
 	if (!collision.hit)
@@ -194,16 +190,12 @@ protected:
     DrawGrid(10, 1.0f);
     
     EndMode3D();
+
+    DrawFPS(10, 10);
      
     EndDrawing();
 
-    d_stdout("raylib mouse button down 0: %d, 1: %d, 2: %d", IsMouseButtonDown(0), IsMouseButtonDown(1), IsMouseButtonDown(2));
-    d_stdout("raylib mouse button pressed 0: %d, 1: %d, 2: %d", IsMouseButtonPressed(0), IsMouseButtonPressed(1), IsMouseButtonPressed(2));
-    d_stdout("raylib mouse button released 0: %d, 1: %d, 2: %d", IsMouseButtonReleased(0), IsMouseButtonReleased(1), IsMouseButtonReleased(2));
-
-
-
-    d_stdout("raylib mouse position: %d,%d", GetMouseX(), GetMouseY());
+    //d_stdout("raylib mouse position: %d,%d", GetMouseX(), GetMouseY());
 
   }
 
@@ -211,7 +203,7 @@ protected:
   bool onMotion(const MotionEvent& event) override
   {
     // unused: event.mod currently active keyboard modifier
-    d_stdout("DPF motion event pos %f,%f, abspos %f,%f",  event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
+    //d_stdout("DPF motion event pos %f,%f, abspos %f,%f",  event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
     SetMousePosition(event.pos.getX(), event.pos.getY());
     return false;
   }
@@ -220,7 +212,7 @@ protected:
   bool onMouse(const MouseEvent& event) override
   {
     // unused: event.mod currently active keyboard modifier
-    d_stdout("DPF mouse event button %d, press %d pos %f,%f, abspos %f,%f",  event.button, event.press, event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
+    //d_stdout("DPF mouse event button %d, press %d pos %f,%f, abspos %f,%f",  event.button, event.press, event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
     // mouse button event should start from 1
     int button = event.button;
     if (button > 0) {
@@ -236,7 +228,7 @@ protected:
 {
   // tell that to raylib
   SetWindowSize(event.size.getWidth(), event.size.getHeight());
-  d_stdout("resize mouse position: %d,%d", GetMouseX(), GetMouseY());
+  //d_stdout("resize mouse position: %d,%d", GetMouseX(), GetMouseY());
 }
 
 
