@@ -11,6 +11,8 @@ START_NAMESPACE_DISTRHO
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
+#define MIN(a, b) ((a)<(b)? (a) : (b))
+
 // how often no refresh on idle state, in Hz. 0 to disable animation during idle state
 #define UI_REFRESH_RATE 30
 
@@ -51,6 +53,9 @@ public:
 	  addIdleCallback(this, refreshTime);
 	}
 
+	// init rendering texture
+	target = LoadRenderTexture(width, height);
+	SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
 
 	// Define the camera to look into our 3d world
 	camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
@@ -66,6 +71,7 @@ public:
     if (UI_REFRESH_RATE > 0) {
       removeIdleCallback(this);
     }
+    UnloadRenderTexture(target);
   }
 
 protected:
@@ -148,11 +154,38 @@ protected:
 
    void onDisplay() override 
   {
+    
+    // take into account resize of window
+    double scaleFactor = getScaleFactor();
+    if (scaleFactor <= 0.0) {
+      scaleFactor = 1.0;
+    }
+    uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+    uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+
+    double scaleWidth = GetScreenWidth() / (float) width;
+    double scaleHeight = GetScreenHeight() / (float) height;
+    float scale = MIN(scaleWidth, scaleHeight);
+
+    // original mouse position
+    SetMouseOffset(0,0);
+    SetMouseScale(1,1);
+    Vector2 posOrig = GetMousePosition();
+
+    // Apply the same transformation as the virtual mouse to the real mouse (i.e. to work with raygui)
+    SetMouseOffset(-(GetScreenWidth() - (width*scale))*0.5f, -(GetScreenHeight() - (height*scale))*0.5f);
+    SetMouseScale(1/scale, 1/scale);
+    Vector2 posScaled = GetMousePosition();
+
     // dummy animation
     Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
     Vector3 cubeSize = { 2.0f, 2.0f, 2.0f };
 
     Ray ray = { 0 };                    // Picking line ray
+    
+    BeginTextureMode(target);
+    
+    ClearBackground(RAYWHITE);
 
     // action either via GUI or directly over the cube
     // NOTE: click on the GUI will also de-select cube. for testing only...
@@ -161,7 +194,7 @@ protected:
       {
 	if (!collision.hit)
 	  {
-	    ray = GetScreenToWorldRay(GetMousePosition(), camera);
+	    ray = GetScreenToWorldRayEx(GetMousePosition(), camera, width, height);
 	    
 	    // Check collision between ray and box
 	    collision = GetRayCollisionBox(ray,
@@ -179,10 +212,6 @@ protected:
 	  }
 	else collision.hit = false;
       }
-    
-    BeginDrawing();
-    
-    ClearBackground(RAYWHITE);
 
     
     BeginMode3D(camera);
@@ -206,11 +235,27 @@ protected:
     EndMode3D();
 
     DrawFPS(10, 10);
+
+
+    DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
+    DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 350, 55, 20, BLUE);
+
+    EndTextureMode();
      
+    BeginDrawing();
+
+    // black around main screen
+    ClearBackground(BLACK);    
+
+    // Draw render texture to screen, properly scaled
+    DrawTexturePro(
+		   target.texture,
+		   (Rectangle){ 0.0f, 0.0f, (float)target.texture.width, (float)-target.texture.height },
+		   (Rectangle){ (GetScreenWidth() - ((float)width*scale))*0.5f, (GetScreenHeight() - ((float)height*scale))*0.5f,
+				(float)width*scale, (float)height*scale },
+		   (Vector2){ 0, 0 }, 0.0f, WHITE);
+
     EndDrawing();
-
-    //d_stdout("raylib mouse position: %d,%d", GetMouseX(), GetMouseY());
-
   }
 
   // mouse move
@@ -250,7 +295,8 @@ protected:
 
 private:
 
-
+  // everything will be rendered to texture
+  RenderTexture2D target;
   // ui
   Camera3D camera;
   // Ray collision hit info
