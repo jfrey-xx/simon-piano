@@ -7,9 +7,9 @@
 
 START_NAMESPACE_DISTRHO
 
- #define MIN(a, b) ((a)<(b)? (a) : (b))
+#define MIN(a, b) ((a)<(b)? (a) : (b))
 
-class SimonPianoUI : public RayUI, public IdleCallback
+class SimonPianoUI : public RayUI
 {
 public:
    /**
@@ -127,12 +127,6 @@ protected:
 
     // ----------------------------------------------------------------------------------------------------------------
     // Widget Callbacks
-
-  void idleCallback() override
-  {
-    // force display refresh
-    repaint();
-  }
 
    void onDisplay() override 
   {

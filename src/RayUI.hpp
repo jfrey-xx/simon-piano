@@ -11,18 +11,23 @@ START_NAMESPACE_DISTRHO
 #include "raylib.h"
 #include "rlgl.h"
 #include "raygui.h"
-END_NAMESPACE_DISTRHO
 
 // default FPS if not defined before including this file
 #ifndef UI_REFRESH_RATE 
 #define UI_REFRESH_RATE 30
 #endif
 
-class RayUI : public UI, public IdleCallback
+class RayUI : public UI, private IdleCallback
 {
 public:
   RayUI();
   ~RayUI();
+protected:
+  // used for constant refresh rate
+  void idleCallback() override;
 };
 
+END_NAMESPACE_DISTRHO
+
 #endif // RAYUI_HPP
+

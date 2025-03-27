@@ -5,8 +5,6 @@
 START_NAMESPACE_DISTRHO
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
-END_NAMESPACE_DISTRHO
-
 
 RayUI::RayUI()
   : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
@@ -28,3 +26,11 @@ RayUI::~RayUI() {
     removeIdleCallback(this);
   }
 }
+
+void RayUI::idleCallback()
+{
+    // force display refresh
+    repaint();
+}
+
+END_NAMESPACE_DISTRHO
