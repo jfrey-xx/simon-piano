@@ -45,7 +45,7 @@ clean:
 	$(MAKE) clean -C dpf/dgl
 	$(MAKE) clean -C plugins/SimonPiano
 	$(MAKE) clean -C dpf/utils/lv2-ttl-generator
-	rm -rf bin build raylib/src/*.d raylib/src/*.o
+	rm -rf bin build raylib/src/*.d raylib/src/*.o src/*.d src/*.o
 
 # --------------------------------------------------------------
 

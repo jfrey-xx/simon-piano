@@ -14,6 +14,7 @@ FILES_DSP = \
 
 FILES_UI = \
 	SimonPianoUI.cpp \
+	../../src/RayUI.cpp \
 	../../raylib/src/rcore.c \
 	../../raylib/src/rshapes.c \
 	../../raylib/src/rtext.c \

@@ -1,5 +1,8 @@
 
-#include "DistrhoUI.hpp"
+// how often no refresh on idle state, in Hz. 0 to disable animation during idle state
+#define UI_REFRESH_RATE 30
+
+#include "RayUI.hpp"
 #include "SimonUtils.h"
 
 START_NAMESPACE_DISTRHO
@@ -12,12 +15,10 @@ START_NAMESPACE_DISTRHO
 
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
-// how often no refresh on idle state, in Hz. 0 to disable animation during idle state
-#define UI_REFRESH_RATE 30
 
 // --------------------------------------------------------------------------------------------------------------------
 
-class SimonPianoUI : public UI, public IdleCallback
+class SimonPianoUI : public RayUI, public IdleCallback
 {
 public:
    /**
@@ -26,7 +27,6 @@ public:
     */
 
     SimonPianoUI()
-      : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
     {
         // compute actual dimensions of the window
         double scaleFactor = getScaleFactor();
@@ -45,12 +45,6 @@ public:
 
         // init raylib -- unused title with DPF platform
 	InitWindow(width,height, "");
-	// always animate
-	if (UI_REFRESH_RATE > 0) {
-	  // method called every xx milliseconds
-	  int refreshTime = 1000/UI_REFRESH_RATE;
-	  addIdleCallback(this, refreshTime);
-	}
 
 	// init rendering texture
 	target = LoadRenderTexture(width, height);
@@ -66,10 +60,8 @@ public:
 
 
   ~SimonPianoUI() {
+    d_stdout("SimonPianoUI destructor");
     // cleanup
-    if (UI_REFRESH_RATE > 0) {
-      removeIdleCallback(this);
-    }
     UnloadRenderTexture(target);
   }
 
