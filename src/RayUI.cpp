@@ -1,6 +1,13 @@
 
 #include "RayUI.hpp"
 
+// put here raygui implementation
+START_NAMESPACE_DISTRHO
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
+END_NAMESPACE_DISTRHO
+
+
 RayUI::RayUI()
   : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
 {

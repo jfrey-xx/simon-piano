@@ -7,16 +7,7 @@
 
 START_NAMESPACE_DISTRHO
 
-// we got to enable some extra functions in raylib for us to pass events
-#include "raylib.h"
-#include "rlgl.h"
-#define RAYGUI_IMPLEMENTATION
-#include "raygui.h"
-
-#define MIN(a, b) ((a)<(b)? (a) : (b))
-
-
-// --------------------------------------------------------------------------------------------------------------------
+ #define MIN(a, b) ((a)<(b)? (a) : (b))
 
 class SimonPianoUI : public RayUI, public IdleCallback
 {
