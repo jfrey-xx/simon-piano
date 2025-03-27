@@ -4,6 +4,8 @@
 # Created by falkTX
 #
 
+USE_GLES2=true
+
 include dpf/Makefile.base.mk
 
 all: dgl examples gen
@@ -40,11 +42,10 @@ tests: dgl
 # --------------------------------------------------------------
 
 clean:
-	$(MAKE) clean -C dgl
 	$(MAKE) clean -C dpf/dgl
 	$(MAKE) clean -C plugins/SimonPiano
 	$(MAKE) clean -C dpf/utils/lv2-ttl-generator
-	rm -rf bin build dpf-widgets/opengl/*.d dpf-widgets/opengl/*.o
+	rm -rf bin build raylib/src/*.d raylib/src/*.o
 
 # --------------------------------------------------------------
 

@@ -5,7 +5,6 @@
 START_NAMESPACE_DISTRHO
 
 // we got to enable some extra functions in raylib for us to pass events
-#define PLATFORM_DPF
 #include "raylib.h"
 #include "rlgl.h"
 #define RAYGUI_IMPLEMENTATION
