@@ -105,4 +105,33 @@ void RayUI::onDisplay()
   
 }
 
+// mouse move
+bool RayUI::onMotion(const MotionEvent& event)
+{
+  // unused: event.mod currently active keyboard modifier
+  SetMousePosition(event.pos.getX(), event.pos.getY());
+  return false;
+}
+
+// mouse press
+bool RayUI::onMouse(const MouseEvent& event)
+{
+  // unused: event.mod currently active keyboard modifier
+  // mouse button event should start from 1
+  int button = event.button;
+  if (button > 0) {
+    SendMouseEvent(button-1, event.press, event.pos.getX(), event.pos.getY());
+    return false;
+  }
+  // we do not catch a button 0 that should not happen...
+  return true;
+}
+
+// resize
+void RayUI::onResize(const ResizeEvent& event)
+{
+  // tell that to raylib
+  SetWindowSize(event.size.getWidth(), event.size.getHeight());
+}
+
 END_NAMESPACE_DISTRHO

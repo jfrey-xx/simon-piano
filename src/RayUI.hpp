@@ -24,7 +24,7 @@ public:
   RayUI();
   ~RayUI();
 protected:
-  // used for constant refresh rate
+  // used for constant refresh rate. might override if client do not want that
   void idleCallback() override;
   // all area of the window, called before onCanvasDisplay
   // Will be enclosed in BeginDrawing() .. EndDrawing(). Mouse will be set to whole window
@@ -42,7 +42,13 @@ protected:
 
 private:
   // callback from UI class, will be split between main and canvas
-  void onDisplay() final;
+  void onDisplay() override final;
+
+  // we also take full control of events
+  bool onMotion(const MotionEvent& event) override final;
+  bool onMouse(const MouseEvent& event) override final; 
+  void onResize(const ResizeEvent& event) override final;
+  // FIXME: implement keyboard
 
   // everything will be rendered to texture
   RenderTexture2D canvas;

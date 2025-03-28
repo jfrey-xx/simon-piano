@@ -172,35 +172,6 @@ protected:
      
   }
 
-  // mouse move
-  bool onMotion(const MotionEvent& event) override
-  {
-    // unused: event.mod currently active keyboard modifier
-    SetMousePosition(event.pos.getX(), event.pos.getY());
-    return false;
-  }
-
-  // mouse press
-  bool onMouse(const MouseEvent& event) override
-  {
-    // unused: event.mod currently active keyboard modifier
-    // mouse button event should start from 1
-    int button = event.button;
-    if (button > 0) {
-      SendMouseEvent(button-1, event.press, event.pos.getX(), event.pos.getY());
-      return false;
-    }
-    // we do not catch a button 0 that should not happen...
-    return true;
-  }
-
-  // resize
-  void onResize(const ResizeEvent& event)
-  {
-    // tell that to raylib
-    SetWindowSize(event.size.getWidth(), event.size.getHeight());
-  }
-
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
