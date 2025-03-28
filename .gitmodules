@@ -5,5 +5,5 @@
 	path = dpf-widgets
 	url = https://github.com/DISTRHO/DPF-Widgets.git
 [submodule "raylib"]
-	path = raylib
+	path = src/raylib
 	url = git@github.com:jfrey-xx/raylib_dpf.git
