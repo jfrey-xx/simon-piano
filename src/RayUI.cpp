@@ -6,10 +6,28 @@ START_NAMESPACE_DISTRHO
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
+#define MIN(a, b) ((a)<(b)? (a) : (b))
+
 RayUI::RayUI()
   : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
 {
-  d_stdout("RayUI constructor");
+  // compute actual dimensions of the window
+  double scaleFactor = getScaleFactor();
+  if (scaleFactor <= 0.0) {
+    scaleFactor = 1.0;
+  }
+  canvasWidth = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
+  canvasHeight = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
+  setGeometryConstraints(canvasWidth, canvasHeight);
+  
+  // we have to resize window size if a scale factor is to be applied
+  if (!d_isEqual(scaleFactor, 1.0))
+    {
+      setSize(canvasWidth, canvasHeight);
+    }
+  
+  // init raylib -- unused title with DPF platform
+  InitWindow(canvasWidth, canvasHeight, "");
   
   // always animate
   if (UI_REFRESH_RATE > 0) {
@@ -17,20 +35,74 @@ RayUI::RayUI()
     int refreshTime = 1000/UI_REFRESH_RATE;
     addIdleCallback(this, refreshTime);
   }
+
+  // init rendering texture
+  canvas = LoadRenderTexture(canvasWidth, canvasHeight);
+  SetTextureFilter(canvas.texture, TEXTURE_FILTER_BILINEAR);
 }
 
 RayUI::~RayUI() {
-  d_stdout("RayUI destructor");
   // cleanup
   if (UI_REFRESH_RATE > 0) {
     removeIdleCallback(this);
   }
+  UnloadRenderTexture(canvas);
 }
 
 void RayUI::idleCallback()
 {
     // force display refresh
     repaint();
+}
+
+void RayUI::onMainDisplay()
+{
+  // black around main screen
+  ClearBackground(BLACK);    
+}
+
+void RayUI::onDisplay()
+{
+  // TODO: scale window if scale factor change?
+
+  // update scale for drawing area
+  double scaleWidth = GetScreenWidth() / (float) canvasWidth;
+  double scaleHeight = GetScreenHeight() / (float) canvasHeight;
+  float scale = MIN(scaleWidth, scaleHeight);
+
+  BeginDrawing();
+  
+  // original mouse position
+  SetMouseOffset(0,0);
+  SetMouseScale(1,1);
+  // let child class draw to mian screen first
+  onMainDisplay();
+
+  // Apply the same transformation as the virtual mouse to the real mouse (i.e. to work with raygui)
+  SetMouseOffset(-(GetScreenWidth() - (canvasWidth*scale))*0.5f, -(GetScreenHeight() - (canvasHeight*scale))*0.5f);
+  SetMouseScale(1/scale, 1/scale);
+
+  // using texture to render scaled UI
+  BeginTextureMode(canvas);
+  onCanvasDisplay();
+  EndTextureMode();
+  
+  // Draw render texture to screen, properly scaled
+  DrawTexturePro(
+		 canvas.texture,
+		 (Rectangle){ 0.0f, 0.0f, (float)canvas.texture.width, (float)-canvas.texture.height },
+		 (Rectangle){ (GetScreenWidth() - ((float)canvasWidth*scale))*0.5f, (GetScreenHeight() - ((float)canvasHeight*scale))*0.5f,
+			      (float)canvasWidth*scale, (float)canvasHeight*scale },
+		 (Vector2){ 0, 0 }, 0.0f, WHITE);
+  
+  // back to global mouse coordinates for the last pass
+  SetMouseOffset(0,0);
+  SetMouseScale(1,1);
+  // let child class draw to mian screen first
+  onMainDisplayLast();
+
+  EndDrawing();
+  
 }
 
 END_NAMESPACE_DISTRHO

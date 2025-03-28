@@ -7,7 +7,6 @@
 
 START_NAMESPACE_DISTRHO
 
-#define MIN(a, b) ((a)<(b)? (a) : (b))
 
 class SimonPianoUI : public RayUI
 {
@@ -19,28 +18,6 @@ public:
 
     SimonPianoUI()
     {
-        // compute actual dimensions of the window
-        double scaleFactor = getScaleFactor();
-	if (scaleFactor <= 0.0) {
-	  scaleFactor = 1.0;
-	}
-	const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-	const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
-	setGeometryConstraints(width, height);
-
-	// we have to resize window size if a scale factor is to be applied
-        if (!d_isEqual(scaleFactor, 1.0))
-        {
-            setSize(width, height);
-        }
-
-        // init raylib -- unused title with DPF platform
-	InitWindow(width,height, "");
-
-	// init rendering texture
-	target = LoadRenderTexture(width, height);
-	SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
-
 	// Define the camera to look into our 3d world
 	camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
 	camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
@@ -51,9 +28,6 @@ public:
 
 
   ~SimonPianoUI() {
-    d_stdout("SimonPianoUI destructor");
-    // cleanup
-    UnloadRenderTexture(target);
   }
 
 protected:
@@ -128,29 +102,11 @@ protected:
     // ----------------------------------------------------------------------------------------------------------------
     // Widget Callbacks
 
-   void onDisplay() override 
+   void onCanvasDisplay()
   {
     
-    // take into account resize of window
-    double scaleFactor = getScaleFactor();
-    if (scaleFactor <= 0.0) {
-      scaleFactor = 1.0;
-    }
-    uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-    uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
 
-    double scaleWidth = GetScreenWidth() / (float) width;
-    double scaleHeight = GetScreenHeight() / (float) height;
-    float scale = MIN(scaleWidth, scaleHeight);
-
-    // original mouse position
-    SetMouseOffset(0,0);
-    SetMouseScale(1,1);
-    Vector2 posOrig = GetMousePosition();
-
-    // Apply the same transformation as the virtual mouse to the real mouse (i.e. to work with raygui)
-    SetMouseOffset(-(GetScreenWidth() - (width*scale))*0.5f, -(GetScreenHeight() - (height*scale))*0.5f);
-    SetMouseScale(1/scale, 1/scale);
+    //Vector2 posOrig = GetMousePosition();
     Vector2 posScaled = GetMousePosition();
 
     // dummy animation
@@ -158,8 +114,6 @@ protected:
     Vector3 cubeSize = { 2.0f, 2.0f, 2.0f };
 
     Ray ray = { 0 };                    // Picking line ray
-    
-    BeginTextureMode(target);
     
     ClearBackground(RAYWHITE);
 
@@ -170,7 +124,7 @@ protected:
       {
 	if (!collision.hit)
 	  {
-	    ray = GetScreenToWorldRayEx(GetMousePosition(), camera, width, height);
+	    ray = GetScreenToWorldRayEx(GetMousePosition(), camera, getCanvasWidth(), getCanvasHeight());
 	    
 	    // Check collision between ray and box
 	    collision = GetRayCollisionBox(ray,
@@ -213,32 +167,15 @@ protected:
     DrawFPS(10, 10);
 
 
-    DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
+    //DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
     DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 350, 55, 20, BLUE);
-
-    EndTextureMode();
      
-    BeginDrawing();
-
-    // black around main screen
-    ClearBackground(BLACK);    
-
-    // Draw render texture to screen, properly scaled
-    DrawTexturePro(
-		   target.texture,
-		   (Rectangle){ 0.0f, 0.0f, (float)target.texture.width, (float)-target.texture.height },
-		   (Rectangle){ (GetScreenWidth() - ((float)width*scale))*0.5f, (GetScreenHeight() - ((float)height*scale))*0.5f,
-				(float)width*scale, (float)height*scale },
-		   (Vector2){ 0, 0 }, 0.0f, WHITE);
-
-    EndDrawing();
   }
 
   // mouse move
   bool onMotion(const MotionEvent& event) override
   {
     // unused: event.mod currently active keyboard modifier
-    //d_stdout("DPF motion event pos %f,%f, abspos %f,%f",  event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
     SetMousePosition(event.pos.getX(), event.pos.getY());
     return false;
   }
@@ -247,7 +184,6 @@ protected:
   bool onMouse(const MouseEvent& event) override
   {
     // unused: event.mod currently active keyboard modifier
-    //d_stdout("DPF mouse event button %d, press %d pos %f,%f, abspos %f,%f",  event.button, event.press, event.pos.getX(), event.pos.getY(), event.absolutePos.getX(), event.absolutePos.getY());
     // mouse button event should start from 1
     int button = event.button;
     if (button > 0) {
@@ -260,19 +196,15 @@ protected:
 
   // resize
   void onResize(const ResizeEvent& event)
-{
-  // tell that to raylib
-  SetWindowSize(event.size.getWidth(), event.size.getHeight());
-  //d_stdout("resize mouse position: %d,%d", GetMouseX(), GetMouseY());
-}
-
+  {
+    // tell that to raylib
+    SetWindowSize(event.size.getWidth(), event.size.getHeight());
+  }
 
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
 
-  // everything will be rendered to texture
-  RenderTexture2D target;
   // ui
   Camera3D camera;
   // Ray collision hit info
