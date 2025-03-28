@@ -27,9 +27,9 @@ protected:
   void idleCallback() override;
   // all area of the window, called before onCanvasDisplay
   // Will be enclosed in BeginDrawing() .. EndDrawing(). Mouse will be set to whole window
-  void onMainDisplay();
+  virtual void onMainDisplay();
   // also in main display, but called after canvas is rendered
-  void onMainDisplayLast() {}
+  virtual void onMainDisplayLast() {}
   // part that will be put to scale by rendering to a texture. At least that is to be implemented
   // mouse will be offset to canvas
   // Note: to do raycasting with mouse, remember to specify canvas size, e.g. 

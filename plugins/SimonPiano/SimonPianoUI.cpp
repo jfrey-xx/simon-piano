@@ -26,7 +26,6 @@ public:
 	camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
     }
 
-
   ~SimonPianoUI() {
   }
 
@@ -101,12 +100,15 @@ protected:
 
     // ----------------------------------------------------------------------------------------------------------------
     // Widget Callbacks
-
+  void onMainDisplay() override
+  {
+    posOrig = GetMousePosition();
+    ClearBackground(BLUE);
+  }
+  
    void onCanvasDisplay()
   {
-    
 
-    //Vector2 posOrig = GetMousePosition();
     Vector2 posScaled = GetMousePosition();
 
     // dummy animation
@@ -166,8 +168,7 @@ protected:
 
     DrawFPS(10, 10);
 
-
-    //DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
+    DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
     DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 350, 55, 20, BLUE);
      
   }
@@ -180,6 +181,8 @@ private:
   Camera3D camera;
   // Ray collision hit info
   RayCollision collision = { 0 };     
+  // for debug
+  Vector2 posOrig;
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;

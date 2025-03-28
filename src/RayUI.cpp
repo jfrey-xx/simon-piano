@@ -59,7 +59,7 @@ void RayUI::idleCallback()
 void RayUI::onMainDisplay()
 {
   // black around main screen
-  ClearBackground(BLACK);    
+  ClearBackground(BLACK);
 }
 
 void RayUI::onDisplay()
