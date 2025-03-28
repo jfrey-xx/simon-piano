@@ -13,25 +13,12 @@ FILES_DSP = \
 	SimonPiano.cpp
 
 FILES_UI = \
-	SimonPianoUI.cpp \
-	../../src/RayUI.cpp \
-	../../raylib/src/rcore.c \
-	../../raylib/src/rshapes.c \
-	../../raylib/src/rtext.c \
-	../../raylib/src/rtextures.c \
-	../../raylib/src/rmodels.c \
-	../../raylib/src/utils.c
+	SimonPianoUI.cpp 
 
 # --------------------------------------------------------------
-# Do some magic
+# Do some magic -- customized for using raylib UI
 
-include ../../dpf/Makefile.plugins.mk
-
-# --------------------------------------------------------------
-# Adding  custom libs
-BUILD_CXX_FLAGS += -I../../src -I../../raylib/src -DPLATFORM_DPF
-# for raylib
-BUILD_C_FLAGS += -I../../raylib/src -DPLATFORM_DPF -DGRAPHICS_API_OPENGL_ES2
+include ../../src/Makefile.rayui.mk
 
 # --------------------------------------------------------------
 # Select plugins
@@ -43,3 +30,7 @@ TARGETS += jack
 #TARGETS += clap
 
 all: $(TARGETS)
+
+
+toto:
+	echo $(RAYUI_PATH)
