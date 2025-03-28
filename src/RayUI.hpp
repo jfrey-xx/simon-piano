@@ -12,16 +12,15 @@ START_NAMESPACE_DISTRHO
 #include "rlgl.h"
 #include "raygui.h"
 
-// default FPS if not defined before including this file
-#ifndef UI_REFRESH_RATE 
-#define UI_REFRESH_RATE 30
-#endif
+// default FPS if not set
+#define UI_DEFAULT_REFRESH_RATE 30
 
 // even though there is an option with PUGL to scale the window we will scale UI through raylib, better/looking with texture filtering and more flexible (possible to use margins around the canvas)
 class RayUI : public UI, private IdleCallback
 {
 public:
-  RayUI();
+  // set desired FPS. 0 to disable animation during idle state
+  RayUI(uint newFPS=UI_DEFAULT_REFRESH_RATE);
   ~RayUI();
 protected:
   // used for constant refresh rate. might override if client do not want that
@@ -55,6 +54,8 @@ private:
   // its size
   uint canvasWidth;
   uint canvasHeight;
+  // configured fps
+  uint fps;
 };
 
 END_NAMESPACE_DISTRHO

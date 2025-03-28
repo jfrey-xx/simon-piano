@@ -8,9 +8,10 @@ START_NAMESPACE_DISTRHO
 
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
-RayUI::RayUI()
+RayUI::RayUI(uint newFPS)
   : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
 {
+  fps = newFPS;
   // compute actual dimensions of the window
   double scaleFactor = getScaleFactor();
   if (scaleFactor <= 0.0) {
@@ -30,9 +31,9 @@ RayUI::RayUI()
   InitWindow(canvasWidth, canvasHeight, "");
   
   // always animate
-  if (UI_REFRESH_RATE > 0) {
+  if (fps > 0) {
     // method called every xx milliseconds
-    int refreshTime = 1000/UI_REFRESH_RATE;
+    int refreshTime = 1000/fps;
     addIdleCallback(this, refreshTime);
   }
 
@@ -43,7 +44,7 @@ RayUI::RayUI()
 
 RayUI::~RayUI() {
   // cleanup
-  if (UI_REFRESH_RATE > 0) {
+  if (fps > 0) {
     removeIdleCallback(this);
   }
   UnloadRenderTexture(canvas);

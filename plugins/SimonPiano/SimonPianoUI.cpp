@@ -16,7 +16,7 @@ public:
       The UI should be initialized to a default state that matches the plugin side.
     */
 
-    SimonPianoUI()
+  SimonPianoUI() : RayUI(UI_REFRESH_RATE)
     {
 	// Define the camera to look into our 3d world
 	camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
