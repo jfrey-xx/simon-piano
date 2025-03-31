@@ -30,7 +30,3 @@ TARGETS += jack
 #TARGETS += clap
 
 all: $(TARGETS)
-
-
-toto:
-	echo $(RAYUI_PATH)
