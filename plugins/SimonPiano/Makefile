@@ -20,6 +20,13 @@ FILES_UI = \
 
 # everything located in a "resources" folder will be bundled with output -- even if empty 
 RESOURCES = $(wildcard $(CURDIR)/resources)
+# tuning or jacks, since plugins will share the same resource folder we want there to link all content instead
+RESOURCES_CONTENT=$(wildcard $(CURDIR)/resources/*)
+# include hidden files
+RESOURCES_CONTENT+=$(wildcard $(CURDIR)/resources/.*)
+# ...but not link to current and parent folder
+RESOURCES_CONTENT:=$(filter-out $(CURDIR)/resources/. $(CURDIR)/resources/.., $(RESOURCES_CONTENT))
+
 # if we have resources to copy, we need to set bundle to all targets with resources
 # WARNING: in case resources come and go we might have duplicated those targets
 ifneq ($(RESOURCES),)
@@ -59,14 +66,17 @@ endif
 
 # copy (at this stage, link) content of resources folder to destination
 # TODO: do not run again if already performed
-# FIXME: in case there are several plugins with jack, one will take precedence. Might want to copy or recursively link instead
+# WARNING with jack: in case there are several plugins with jack and resources with the same name, one will take precedence
+# FIXME: if resources are deleted or renamed between two runs, links will be broken. clean between.
 resources: $(TARGETS) $(RESOURCES)
 ifneq ($(RESOURCES),)
 ifeq ($(findstring jack,$(TARGETS)),jack)
 	@echo "copy resources to jack"
 # note: -n to avoid recursively upon re-rerunning
-	ln -snf $(RESOURCES) $(JACK_RESOURCES_DIR)
-	echo $(RESOURCES) $(JACK_RESOURCES_DIR)
+	install -d $(JACK_RESOURCES_DIR)
+ifneq ($(RESOURCES_CONTENT),)
+	ln -snf $(RESOURCES_CONTENT) $(JACK_RESOURCES_DIR)
+endif
 endif
 ifeq ($(findstring clap,$(TARGETS)),clap)
 	@echo "copy resources to clap"
@@ -85,6 +95,5 @@ ifeq ($(findstring vst2,$(TARGETS)),vst2)
 	ln -snf $(RESOURCES) $(VST2_RESOURCES_DIR)
 endif
 endif
-
 
 all: $(TARGETS) resources
