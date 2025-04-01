@@ -15,15 +15,22 @@ RayUI::RayUI(uint newFPS)
   fps = newFPS;
 
   // determine resource location. If the plugin is not bundled, i.e. with jack, we will try a location relative to binary
-  if (getBundlePath() != nullptr)
-    {
-      resourcesLocation = getResourcePath(getBundlePath());
-    }
-  else
+  // HOTFIX, for clap (due to host upon folder passed upon init?) bundle path is (or might?) be the path to the binary, we need to target the folder instead
+  if (getBundlePath() == nullptr or String(getPluginFormatName()) == "CLAP")
     {
       resourcesLocation = getBinaryFilename();
       resourcesLocation.truncate(resourcesLocation.rfind(DISTRHO_OS_SEP));
+      // on Mac the binary when MACOS_APP_BUNDLE is in Contents/MacOS, should detect and go back twice more
+      // TODO check that this is the same on Mac with jack -- MACOS_APP_BUNDLE appears to be set with UI files, at least for our opengl
+#ifdef DISTRHO_OS_MAC
+      resourcesLocation.truncate(resourcesLocation.rfind(DISTRHO_OS_SEP));
+      resourcesLocation.truncate(resourcesLocation.rfind(DISTRHO_OS_SEP));
+#endif // DISTRHO_OS_MAC
       resourcesLocation += getResourcePath("");
+    }
+  else
+    {
+      resourcesLocation = getResourcePath(getBundlePath());
     }
   resourcesLocation += String(DISTRHO_OS_SEP);
 
