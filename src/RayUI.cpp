@@ -39,18 +39,20 @@ RayUI::RayUI(uint newFPS)
   if (scaleFactor <= 0.0) {
     scaleFactor = 1.0;
   }
-  canvasWidth = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-  canvasHeight = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
-  setGeometryConstraints(canvasWidth, canvasHeight);
+
+  // to get a consistent display the canvas size is set in stone to the default size. Only the window will be scaled
+  canvasWidth = DISTRHO_UI_DEFAULT_WIDTH;
+  canvasHeight = DISTRHO_UI_DEFAULT_HEIGHT;
+  setGeometryConstraints(canvasWidth * scaleFactor, canvasHeight * scaleFactor);
   
   // we have to resize window size if a scale factor is to be applied
   if (!d_isEqual(scaleFactor, 1.0))
     {
-      setSize(canvasWidth, canvasHeight);
+      setSize(canvasWidth * scaleFactor, canvasHeight * scaleFactor);
     }
   
   // init raylib -- unused title with DPF platform
-  InitWindow(canvasWidth, canvasHeight, "");
+  InitWindow(canvasWidth * scaleFactor, canvasHeight * scaleFactor, "");
   
   // always animate
   if (fps > 0) {

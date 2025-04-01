@@ -1,5 +1,4 @@
 
-
 #ifndef RAYUI_HPP
 #define RAYUI_HPP
 
@@ -15,7 +14,10 @@ START_NAMESPACE_DISTRHO
 // default FPS if not set
 #define UI_DEFAULT_REFRESH_RATE 30
 
-// even though there is an option with PUGL to scale the window we will scale UI through raylib, better/looking with texture filtering and more flexible (possible to use margins around the canvas)
+// Wrapper for geting raylib within a DPF plugin
+// Even though there is an option with PUGL to scale the window we will scale UI through raylib, better/looking with texture filtering and more flexible (possible to use margins around the canvas)
+// TODO: deal with scale change e.g. through onScaleFactorChanged or by polling scaleFactor if I get that to change in some situations
+
 class RayUI : public UI, private IdleCallback
 {
 public:

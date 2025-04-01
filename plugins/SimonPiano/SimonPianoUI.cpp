@@ -175,10 +175,10 @@ protected:
 
     DrawFPS(10, 10);
 
-    DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
-    DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 350, 55, 20, BLUE);
+    DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 300, 25, 20, GREEN);
+    DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 300, 55, 20, BLUE);
 
-    Vector2 position = { 350.0f, 280.0f };
+    Vector2 position = { 250.0f, 180.0f };
     Rectangle frameRec = { 0.0f, 0.0f, (float)piano.width, (float)piano.height };
     // drawing asset
     DrawTextureRec(piano, frameRec, position, WHITE);
