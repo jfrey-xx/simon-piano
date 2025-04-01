@@ -4,8 +4,45 @@
 
 #include "RayUI.hpp"
 #include "SimonUtils.h"
+
 START_NAMESPACE_DISTRHO
 
+// codes for used sprites
+enum KeyIdx 
+{
+  BLACK_KEY,
+  WHITE_KEY,
+  BLACK_KEY_DIMMED,
+  WHITE_KEY_DIMMED,
+  BLACK_KEY_INSTRUCTION,
+  WHITE_KEY_INSTRUCTION,
+  BLACK_KEY_CORRECT,
+  WHITE_KEY_CORRECT,
+  BLACK_KEY_INCORRECT,
+  WHITE_KEY_INCORRECT,
+  BLACK_KEY_DEBUG,
+  WHITE_KEY_DEBUG
+};
+
+// return true if the key for this note is C, D, E, F, G, A, B
+bool isKeyWhite(uint note) {
+  // only twelve note
+  note = note % 12;
+  return (note == 0 or note == 2 or note == 4 or note == 5 or note == 7 or note == 9 or note == 11);
+}
+
+// return the number of white keys for that many notes starting from root
+uint getNbWhiteKeys(uint rootKey, uint nbKeys) {
+  // stick to one simple case when root is C
+  if (rootKey % 12 == 0) {
+    if (nbKeys % 12 <= 4) {
+      return ceil((nbKeys % 12 ) / (float) 2) + nbKeys / 12 * 7;
+    }
+    return ceil((nbKeys % 12 + 1) / (float) 2) + nbKeys / 12 * 7;
+  }
+  // otherwise, compute compared to simple case -- for sure there is a more clever way but is eludes me today
+  return getNbWhiteKeys(0, nbKeys + rootKey % 12) - getNbWhiteKeys(0, rootKey % 12);
+}
 
 class SimonPianoUI : public RayUI
 {
@@ -173,17 +210,14 @@ protected:
     
     EndMode3D();
 
-    DrawFPS(10, 10);
+
+    drawPiano({ 10.0f, 10.0f }, { 300.0f, 300.0f }, root, nbNotes);
+    DrawRectangleLines(10, 10, 300, 300, RED);   
 
     DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 300, 25, 20, GREEN);
     DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 300, 55, 20, BLUE);
 
-    Vector2 position = { 250.0f, 180.0f };
-    Rectangle frameRec = { 0.0f, 0.0f, (float)piano.width, (float)piano.height };
-    // drawing asset
-    DrawTextureRec(piano, frameRec, position, WHITE);
-
-     
+    DrawFPS(10, 10);
   }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -198,6 +232,8 @@ private:
   Vector2 posOrig;
   // texture for piano keys
   Texture2D piano;
+  // location of current key in texture
+  Rectangle keySpriteRec;
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;
@@ -211,6 +247,167 @@ private:
   int maxMiss = params[kMaxMiss].def;
   int maxRound = params[kMaxRound].def;
   bool shallNotPass = params[kShallNotPass].def;
+
+  // extract and draw sprite id a said location and size
+  void drawKey(KeyIdx idx, Vector2 pos, Vector2 size) {
+    // fixed size for all keys in the sprite sheet
+    static const Rectangle spriteSize = {0, 0, 8, 32};
+    // picking the right position
+    int spriteShift = 0;
+    switch(idx) {
+    case BLACK_KEY:
+      spriteShift = 2;
+      break;
+    case WHITE_KEY:
+      spriteShift = 0;
+      break;
+    case BLACK_KEY_DIMMED:
+      spriteShift = 6;
+      break;
+    case WHITE_KEY_DIMMED:
+      spriteShift = 4;
+      break;
+    case BLACK_KEY_INSTRUCTION:
+      spriteShift = 15;
+      break;
+    case WHITE_KEY_INSTRUCTION:
+      spriteShift = 13;
+      break;
+    case BLACK_KEY_CORRECT:
+      spriteShift = 19;
+      break;
+    case WHITE_KEY_CORRECT:
+      spriteShift = 17;
+      break;
+    case BLACK_KEY_INCORRECT:
+      spriteShift = 23;
+      break;
+    case WHITE_KEY_INCORRECT:
+      spriteShift = 21;
+      break;
+    case BLACK_KEY_DEBUG:
+      spriteShift = 10;
+      break;
+    default:
+    case WHITE_KEY_DEBUG:
+      spriteShift = 8;
+      break;
+    }
+    
+    // no rotation, no tint
+    DrawTexturePro(piano, {spriteSize.x + spriteShift * spriteSize.width, spriteSize.y, spriteSize.width, spriteSize.height}, {pos.x, pos.y, size.x, size.y}, {0.0, 0.0}, 0, WHITE); 
+  }
+
+  // drawing a very simple keyboard using imgui, fetching drawList
+  // pos: upper left corner of the widget
+  // size: size of the widget
+  void drawPiano(Vector2 pos, Vector2 size, uint rootKey, uint nbKeys) {
+    // find number of white keys
+    int nbWhiteKeys = getNbWhiteKeys(rootKey, nbKeys);
+    // in case we start or end with black, leave some padding as half a white
+    float uiNbWhiteKeys = nbWhiteKeys;
+    if (!isKeyWhite(rootKey)) {
+      uiNbWhiteKeys += 0.5;
+    }
+    if (!isKeyWhite(rootKey + nbKeys - 1)) {
+      uiNbWhiteKeys += 0.5;
+    }
+    // around keyboard, between keys -- would be same ratio for 12 notes
+    Vector2 margins = {size.x * 0.01f, size.y * 0.01f};
+    // black keys over whites, width of a key will be conditioned by the former
+    Vector2 keySize;
+    keySize.x = (size.x  - margins.x * 2) / uiNbWhiteKeys;
+    keySize.y = size.y - margins.y * 2;
+
+    // draw the background
+    // TODO: debug here
+    DrawRectangle(pos.x, pos.y, size.x, size.y, BLUE);   
+
+    // base position for current key
+    Vector2 startPos = {pos.x + margins.x, pos.y + margins.y};
+    // shift if we start with black key
+    if (!isKeyWhite(rootKey)) {
+      startPos.x += keySize.x * 0.5;
+    }
+    Vector2 curPos(startPos);
+    KeyIdx sprite;
+
+    // first draw white keys
+    uint note = rootKey;
+    for (uint i = 0; i < nbKeys; i++) {
+      if(isKeyWhite(note)) {
+	// dimm key if not in scale and option set
+	if (shallNotPass && !scale[note % 12]) {
+	  sprite = WHITE_KEY_DIMMED;
+	}
+	else {
+	  sprite = WHITE_KEY;
+	}
+	// this note currently active, special color
+	if ((int)note == curNote) {
+	  switch(status) {
+	  case INSTRUCTIONS:
+	    sprite = WHITE_KEY_INSTRUCTION;
+	    break;
+	  case PLAYING_CORRECT:
+	    sprite = WHITE_KEY_CORRECT;
+	    break;
+	  case PLAYING_INCORRECT:
+	  case PLAYING_OVER:
+	    sprite = WHITE_KEY_INCORRECT;
+	    break;
+	  default:
+	    // debug
+	    sprite = WHITE_KEY_DEBUG;
+	    break;
+	  }
+	}
+	drawKey(sprite, curPos, keySize);
+	curPos.x += keySize.x;
+      }
+      note++;
+    }
+    // black on top
+    curPos = startPos;
+    note = rootKey;
+    for (uint i = 0; i < nbKeys; i++) {
+      // skip white keys, just advance
+      if(isKeyWhite(note)) {
+	curPos.x += keySize.x;
+      }
+      else {
+	// dim key if not in scale and option set
+	if (shallNotPass && !scale[note % 12]) {
+	  sprite = BLACK_KEY_DIMMED;
+	}
+	else {
+	  sprite = BLACK_KEY;
+	}
+	// this note currently active, special color
+	if ((int)note == curNote) {
+	  switch(status) {
+	  case INSTRUCTIONS:
+	    sprite = BLACK_KEY_INSTRUCTION;
+	    break;
+	  case PLAYING_CORRECT:
+	    sprite = BLACK_KEY_CORRECT;
+	    break;
+	  case PLAYING_INCORRECT:
+	  case PLAYING_OVER:
+	    sprite = BLACK_KEY_INCORRECT;
+	    break;
+	  default:
+	    // debug
+	    sprite = BLACK_KEY_DEBUG;
+	    break;
+	  }
+	}
+	// for black key, shift half to right to center between two white keys
+	drawKey(sprite, {curPos.x - keySize.x / 2, curPos.y}, keySize);
+      }
+      note++;
+    }
+  }
   
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPianoUI)
 };
