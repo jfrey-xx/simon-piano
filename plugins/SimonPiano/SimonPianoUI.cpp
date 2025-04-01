@@ -4,7 +4,6 @@
 
 #include "RayUI.hpp"
 #include "SimonUtils.h"
-
 START_NAMESPACE_DISTRHO
 
 
@@ -18,15 +17,23 @@ public:
 
   SimonPianoUI() : RayUI(UI_REFRESH_RATE)
     {
-	// Define the camera to look into our 3d world
-	camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
-	camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-	camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-	camera.fovy = 45.0f;                                // Camera field-of-view Y
-	camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+      String resourcesLocation = getResourcesLocation();
+      d_stdout("resources location: %s", resourcesLocation.buffer());
+
+      // load texture for piano keys
+      piano = LoadTexture(resourcesLocation + "piano.png");
+      
+      // Define the camera to look into our 3d world
+      camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
+      camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
+      camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+      camera.fovy = 45.0f;                                // Camera field-of-view Y
+      camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
     }
 
   ~SimonPianoUI() {
+    // Texture unloading
+    UnloadTexture(piano);
   }
 
 protected:
@@ -170,6 +177,12 @@ protected:
 
     DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 350, 25, 20, GREEN);
     DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 350, 55, 20, BLUE);
+
+    Vector2 position = { 350.0f, 280.0f };
+    Rectangle frameRec = { 0.0f, 0.0f, (float)piano.width, (float)piano.height };
+    // drawing asset
+    DrawTextureRec(piano, frameRec, position, WHITE);
+
      
   }
 
@@ -183,6 +196,8 @@ private:
   RayCollision collision = { 0 };     
   // for debug
   Vector2 posOrig;
+  // texture for piano keys
+  Texture2D piano;
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;

@@ -1,5 +1,6 @@
 
 #include "RayUI.hpp"
+#include "DistrhoPluginUtils.hpp"
 
 // put here raygui implementation
 START_NAMESPACE_DISTRHO
@@ -12,6 +13,20 @@ RayUI::RayUI(uint newFPS)
   : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
 {
   fps = newFPS;
+
+  // determine resource location. If the plugin is not bundled, i.e. with jack, we will try a location relative to binary
+  if (getBundlePath() != nullptr)
+    {
+      resourcesLocation = getResourcePath(getBundlePath());
+    }
+  else
+    {
+      resourcesLocation = getBinaryFilename();
+      resourcesLocation.truncate(resourcesLocation.rfind(DISTRHO_OS_SEP));
+      resourcesLocation += getResourcePath("");
+    }
+  resourcesLocation += String(DISTRHO_OS_SEP);
+
   // compute actual dimensions of the window
   double scaleFactor = getScaleFactor();
   if (scaleFactor <= 0.0) {
@@ -133,6 +148,12 @@ void RayUI::onResize(const ResizeEvent& event)
 {
   // tell that to raylib
   SetWindowSize(event.size.getWidth(), event.size.getHeight());
+}
+
+
+String RayUI::getResourcesLocation()
+{
+  return String(resourcesLocation);
 }
 
 END_NAMESPACE_DISTRHO

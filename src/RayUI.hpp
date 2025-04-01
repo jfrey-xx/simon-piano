@@ -36,6 +36,9 @@ protected:
   //   ray = GetScreenToWorldRayEx(GetMousePosition(), camera, getCanvasWidth(), getCanvasHeight());
   virtual void onCanvasDisplay() = 0;
 
+  // return path to desired resource, terminated by os separator -- not ensuring if said location exists. 
+  String getResourcesLocation();
+
   uint getCanvasWidth() { return canvasWidth; }
   uint getCanvasHeight() { return canvasHeight; }
 
@@ -56,6 +59,8 @@ private:
   uint canvasHeight;
   // configured fps
   uint fps;
+  // (supposed) full path to resources
+  String resourcesLocation;
 };
 
 END_NAMESPACE_DISTRHO
