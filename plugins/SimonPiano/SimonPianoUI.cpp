@@ -237,10 +237,12 @@ protected:
     GuiLabel(layoutRecs[18], "Scale");
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
 
+    bool scaleToggles[12];
     for (int i=0; i < 12; i++) {
-      // layoutRec for scale buttons from 5 to 16
-      if (GuiButton(layoutRecs[5+i], scaleNotes[i])) {
-	setParameterValue(kScaleC + i, !scale[i]);
+      bool scaleToggle = scale[i];
+      GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
+      if (scaleToggle != scale[i]) {
+        setParameterValue(kScaleC + i, !scale[i]);
       }
     }
 
