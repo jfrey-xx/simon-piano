@@ -59,13 +59,6 @@ public:
 
       // load texture for piano keys
       piano = LoadTexture(resourcesLocation + "piano.png");
-      
-      // Define the camera to look into our 3d world
-      camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
-      camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-      camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-      camera.fovy = 45.0f;                                // Camera field-of-view Y
-      camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
     }
 
   ~SimonPianoUI() {
@@ -146,76 +139,84 @@ protected:
     // Widget Callbacks
   void onMainDisplay() override
   {
-    posOrig = GetMousePosition();
     ClearBackground(BLUE);
   }
   
    void onCanvasDisplay()
   {
 
-    Vector2 posScaled = GetMousePosition();
-
-    // dummy animation
-    Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
-    Vector3 cubeSize = { 2.0f, 2.0f, 2.0f };
-
-    Ray ray = { 0 };                    // Picking line ray
+    Vector2 anchor01 = { 100, 10 };
     
-    ClearBackground(RAYWHITE);
+    float SliderRootValue = 0.0f;
+    bool ButtonStartPressed = false;
+    float SliderBarNbKeysValue = 0.0f;
+    bool ButtonScaleCPressed = false;
+    bool ButtonScaleCsPressed = false;
+    bool ButtonScaleDPressed = false;
+    bool ButtonScaleDsPressed = false;
+    bool ButtonScaleEPressed = false;
+    bool ButtonScaleFPressed = false;
+    bool ButtonScaleFsPressed = false;
+    bool ButtonScaleGPressed = false;
+    bool ButtonScaleGsPressed = false;
+    bool ButtonScaleAPressed = false;
+    bool ButtonScaleAsPressed = false;
+    bool ButtonScaleBPressed = false;
+    bool CheckBoxShallNotPassChecked = false;
+    float SliderBarRoundsValue = 0.0f;
 
-    // action either via GUI or directly over the cube
-    // NOTE: click on the GUI will also de-select cube. for testing only...
-    bool butPress = GuiButton( (Rectangle){ 20, 40, 200, 20 }, "Press me!");
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-      {
-	if (!collision.hit)
-	  {
-	    ray = GetScreenToWorldRayEx(GetMousePosition(), camera, getCanvasWidth(), getCanvasHeight());
-	    
-	    // Check collision between ray and box
-	    collision = GetRayCollisionBox(ray,
-					   (BoundingBox){(Vector3){ cubePosition.x - cubeSize.x/2, cubePosition.y - cubeSize.y/2, cubePosition.z - cubeSize.z/2 },
-							 (Vector3){ cubePosition.x + cubeSize.x/2, cubePosition.y + cubeSize.y/2, cubePosition.z + cubeSize.z/2 }});
-	  }
-	else collision.hit = false;
-      }
+    Rectangle layoutRecs[22] = {
+        (Rectangle){ anchor01.x + 0, anchor01.y + 96, 312, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 0, 128, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 32, 264, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 64, 120, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 128, 312, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 40, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 80, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 120, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 160, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 200, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 240, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 280, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 320, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 360, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 400, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 440, anchor01.y + 160, 32, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 192, 24, 24 },
+        (Rectangle){ anchor01.x + -80, anchor01.y + 160, 72, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 224, 312, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 408, 120, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 440, 120, 24 },
+    };
     
-    else if (butPress)
-      {
-	if (!collision.hit)
-	  {
-	    collision.hit = true;
-	  }
-	else collision.hit = false;
-      }
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
 
+    GuiSlider(layoutRecs[0], "Root note", NULL, &SliderRootValue, 0, 100);
+    GuiLabel(layoutRecs[1], "Welcome");
+    GuiLabel(layoutRecs[2], "Press Start for a new game");
+    ButtonStartPressed = GuiButton(layoutRecs[3], "Start"); 
+    GuiSliderBar(layoutRecs[4], "Number of keys", NULL, &SliderBarNbKeysValue, 0, 100);
+    ButtonScaleCPressed = GuiButton(layoutRecs[5], "C"); 
+    ButtonScaleCsPressed = GuiButton(layoutRecs[6], "C#"); 
+    ButtonScaleDPressed = GuiButton(layoutRecs[7], "D"); 
+    ButtonScaleDsPressed = GuiButton(layoutRecs[8], "D#"); 
+    ButtonScaleEPressed = GuiButton(layoutRecs[9], "E"); 
+    ButtonScaleFPressed = GuiButton(layoutRecs[10], "F"); 
+    ButtonScaleFsPressed = GuiButton(layoutRecs[11], "F#"); 
+    ButtonScaleGPressed = GuiButton(layoutRecs[12], "G"); 
+    ButtonScaleGsPressed = GuiButton(layoutRecs[13], "G#"); 
+    ButtonScaleAPressed = GuiButton(layoutRecs[14], "A"); 
+    ButtonScaleAsPressed = GuiButton(layoutRecs[15], "A#"); 
+    ButtonScaleBPressed = GuiButton(layoutRecs[16], "B"); 
+    GuiCheckBox(layoutRecs[17], "Shall not pass", &CheckBoxShallNotPassChecked);
+    GuiLabel(layoutRecs[18], "Scale");
+    GuiSliderBar(layoutRecs[19], "Rounds for miss", NULL, &SliderBarRoundsValue, 0, 100);
+    GuiLabel(layoutRecs[20], "Missed 0/0");
+    GuiLabel(layoutRecs[21], "Current best: 0");
     
-    BeginMode3D(camera);
-    // rotation animation
-    rlPushMatrix();
-    static int r = 0;
-    r++;
-    // rotate along <1,0,0> x-axis
-    rlRotatef(r, 1, 0, 0);
-    if (collision.hit) {
-      DrawCube(cubePosition, cubeSize.x, cubeSize.y, cubeSize.z, BLUE);
-    }
-    else {
-      DrawCube(cubePosition, cubeSize.x, cubeSize.y, cubeSize.z, RED);
-    }
-    rlPopMatrix();
-    DrawCubeWires(cubePosition, cubeSize.x, cubeSize.y, cubeSize.z, MAROON);
-    
-    DrawGrid(10, 1.0f);
-    
-    EndMode3D();
 
-
-    drawPiano({ 10.0f, 10.0f }, { 300.0f, 300.0f }, root, nbNotes);
-    DrawRectangleLines(10, 10, 300, 300, RED);   
-
-    DrawText(TextFormat("Default Mouse: [%i , %i]", (int)posOrig.x, (int)posOrig.y), 300, 25, 20, GREEN);
-    DrawText(TextFormat("Virtual Mouse: [%i , %i]", (int)posScaled.x, (int)posScaled.y), 300, 55, 20, BLUE);
+    drawPiano({ getCanvasWidth() * 0.1 / 2, 300.0f }, { getCanvasWidth() * 0.9, 100.0f }, root, nbNotes);
 
     DrawFPS(10, 10);
   }
@@ -223,13 +224,6 @@ protected:
     // ----------------------------------------------------------------------------------------------------------------
 
 private:
-
-  // ui
-  Camera3D camera;
-  // Ray collision hit info
-  RayCollision collision = { 0 };     
-  // for debug
-  Vector2 posOrig;
   // texture for piano keys
   Texture2D piano;
   // location of current key in texture

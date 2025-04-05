@@ -1,0 +1,33 @@
+#
+# rgl layout text file (v4.0) - raygui layout file generated using rGuiLayout
+#
+# Number of controls:     22
+#
+# Ref. window:    r <x> <y> <width> <height>
+# Anchor info:    a <id> <name> <posx> <posy> <enabled>
+# Control info:   c <id> <type> <name> <rectangle> <anchor_id> <text>
+#
+r 0 40 -1 -1
+a 001 anchor01 1056 216 1
+c 000 16 SliderRoot 0 96 312 24 1 Root note
+c 001 4 LabelStatus 0 0 128 24 1 Welcome
+c 002 4 LabelInstructions'' 0 32 264 24 1 Press Start for a new game
+c 003 5 ButtonStart 0 64 120 24 1 Start
+c 004 17 SliderBarNbKeys 0 128 312 24 1 Number of keys
+c 005 5 ButtonScaleC 0 160 32 24 1 C
+c 006 5 ButtonScaleCs 40 160 32 24 1 C#
+c 007 5 ButtonScaleD 80 160 32 24 1 D
+c 008 5 ButtonScaleDs 120 160 32 24 1 D#
+c 009 5 ButtonScaleE 160 160 32 24 1 E
+c 010 5 ButtonScaleF 200 160 32 24 1 F
+c 011 5 ButtonScaleFs 240 160 32 24 1 F#
+c 012 5 ButtonScaleG 280 160 32 24 1 G
+c 013 5 ButtonScaleGs 320 160 32 24 1 G#
+c 014 5 ButtonScaleA 360 160 32 24 1 A
+c 015 5 ButtonScaleAs 400 160 32 24 1 A#
+c 016 5 ButtonScaleB 440 160 32 24 1 B
+c 017 7 CheckBoxShallNotPass 0 192 24 24 1 Shall not pass
+c 018 4 Label018 -80 160 72 24 1 Scale
+c 019 17 SliderBarRounds 0 224 312 24 1 Rounds for miss
+c 020 4 LabelMiss 0 408 120 24 1 Missed 0/0
+c 021 4 LabelBest 0 440 120 24 1 Current best: 0
