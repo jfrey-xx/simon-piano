@@ -145,44 +145,32 @@ protected:
    void onCanvasDisplay()
   {
 
-    Vector2 anchor01 = { 110, 10 };
-    
-    bool ButtonScaleCPressed = false;
-    bool ButtonScaleCsPressed = false;
-    bool ButtonScaleDPressed = false;
-    bool ButtonScaleDsPressed = false;
-    bool ButtonScaleEPressed = false;
-    bool ButtonScaleFPressed = false;
-    bool ButtonScaleFsPressed = false;
-    bool ButtonScaleGPressed = false;
-    bool ButtonScaleGsPressed = false;
-    bool ButtonScaleAPressed = false;
-    bool ButtonScaleAsPressed = false;
-    bool ButtonScaleBPressed = false;
+    // upper left reference point for UI
+    Vector2 anchor = { 110, 10 };
 
     Rectangle layoutRecs[22] = {
-        (Rectangle){ anchor01.x + 0, anchor01.y + 0, 128, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 32, 264, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 64, 120, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 96, 312, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 128, 312, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 40, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 80, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 120, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 160, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 200, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 240, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 280, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 320, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 360, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 400, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 440, anchor01.y + 160, 32, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 192, 24, 24 },
-        (Rectangle){ anchor01.x + -80, anchor01.y + 160, 72, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 224, 312, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 408, 120, 24 },
-        (Rectangle){ anchor01.x + 0, anchor01.y + 440, 120, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 0, 128, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 32, 264, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 64, 120, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 96, 312, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 128, 312, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 40, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 80, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 120, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 160, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 200, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 240, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 280, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 320, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 360, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 400, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 440, anchor.y + 160, 32, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 192, 24, 24 },
+        (Rectangle){ anchor.x + -80, anchor.y + 160, 72, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 224, 312, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 408, 120, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 440, 120, 24 },
     };
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
@@ -248,18 +236,13 @@ protected:
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_RIGHT);
     GuiLabel(layoutRecs[18], "Scale");
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
-    ButtonScaleCPressed = GuiButton(layoutRecs[5], "C"); 
-    ButtonScaleCsPressed = GuiButton(layoutRecs[6], "C#"); 
-    ButtonScaleDPressed = GuiButton(layoutRecs[7], "D"); 
-    ButtonScaleDsPressed = GuiButton(layoutRecs[8], "D#"); 
-    ButtonScaleEPressed = GuiButton(layoutRecs[9], "E"); 
-    ButtonScaleFPressed = GuiButton(layoutRecs[10], "F"); 
-    ButtonScaleFsPressed = GuiButton(layoutRecs[11], "F#"); 
-    ButtonScaleGPressed = GuiButton(layoutRecs[12], "G"); 
-    ButtonScaleGsPressed = GuiButton(layoutRecs[13], "G#"); 
-    ButtonScaleAPressed = GuiButton(layoutRecs[14], "A"); 
-    ButtonScaleAsPressed = GuiButton(layoutRecs[15], "A#"); 
-    ButtonScaleBPressed = GuiButton(layoutRecs[16], "B"); 
+
+    for (int i=0; i < 12; i++) {
+      // layoutRec for scale buttons from 5 to 16
+      if (GuiButton(layoutRecs[5+i], scaleNotes[i])) {
+	setParameterValue(kScaleC + i, !scale[i]);
+      }
+    }
 
     // --- end disable part of the UI during game ---
     if (isRunning(status)) {
