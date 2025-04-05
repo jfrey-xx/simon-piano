@@ -145,11 +145,8 @@ protected:
    void onCanvasDisplay()
   {
 
-    Vector2 anchor01 = { 100, 10 };
+    Vector2 anchor01 = { 110, 10 };
     
-    float SliderRootValue = 0.0f;
-    bool ButtonStartPressed = false;
-    float SliderBarNbKeysValue = 0.0f;
     bool ButtonScaleCPressed = false;
     bool ButtonScaleCsPressed = false;
     bool ButtonScaleDPressed = false;
@@ -162,14 +159,12 @@ protected:
     bool ButtonScaleAPressed = false;
     bool ButtonScaleAsPressed = false;
     bool ButtonScaleBPressed = false;
-    bool CheckBoxShallNotPassChecked = false;
-    float SliderBarRoundsValue = 0.0f;
 
     Rectangle layoutRecs[22] = {
-        (Rectangle){ anchor01.x + 0, anchor01.y + 96, 312, 24 },
         (Rectangle){ anchor01.x + 0, anchor01.y + 0, 128, 24 },
         (Rectangle){ anchor01.x + 0, anchor01.y + 32, 264, 24 },
         (Rectangle){ anchor01.x + 0, anchor01.y + 64, 120, 24 },
+        (Rectangle){ anchor01.x + 0, anchor01.y + 96, 312, 24 },
         (Rectangle){ anchor01.x + 0, anchor01.y + 128, 312, 24 },
         (Rectangle){ anchor01.x + 0, anchor01.y + 160, 32, 24 },
         (Rectangle){ anchor01.x + 40, anchor01.y + 160, 32, 24 },
@@ -189,14 +184,70 @@ protected:
         (Rectangle){ anchor01.x + 0, anchor01.y + 408, 120, 24 },
         (Rectangle){ anchor01.x + 0, anchor01.y + 440, 120, 24 },
     };
-    
-    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
 
-    GuiSlider(layoutRecs[0], "Root note", NULL, &SliderRootValue, 0, 100);
-    GuiLabel(layoutRecs[1], "Welcome");
-    GuiLabel(layoutRecs[2], "Press Start for a new game");
-    ButtonStartPressed = GuiButton(layoutRecs[3], "Start"); 
-    GuiSliderBar(layoutRecs[4], "Number of keys", NULL, &SliderBarNbKeysValue, 0, 100);
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+    
+    switch (status) {
+    case WAITING:
+      GuiLabel(layoutRecs[0], "Welcome");
+      GuiLabel(layoutRecs[1], "Press Start for a new game");
+      break;
+    case STARTING:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d", round));
+      GuiLabel(layoutRecs[1], TextFormat("Pay attention..."));
+      break;
+    case INSTRUCTIONS:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d -- step %d", round, step));
+      GuiLabel(layoutRecs[1], TextFormat("Play after me!"));
+      break;
+    case GAMEOVER:
+      GuiLabel(layoutRecs[0], TextFormat("Game over during Round %d -- step %d", round, step));
+      GuiLabel(layoutRecs[1], TextFormat("Try again!"));
+      break;
+    case PLAYING_WAIT:
+    case PLAYING_CORRECT:
+    case PLAYING_INCORRECT:
+    case PLAYING_OVER:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d -- step %d", round, step));
+      GuiLabel(layoutRecs[1], TextFormat("Your turn!"));
+      break;
+    default:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d", round));
+      GuiLabel(layoutRecs[1], TextFormat("Play after me!"));
+      break;
+    }
+    
+    if (isRunning(status)) {
+      // TODO, set disabled!
+    }
+    
+    if(GuiButton(layoutRecs[2], "Start")) {
+      // send false/true cylce to make sure to toggle
+      setParameterValue(kStart, false);
+      setParameterValue(kStart, true);
+    }
+
+    // sync root note
+    float uiRoot = root;
+    GuiSlider(layoutRecs[3], TextFormat("Root note: %d", (int)uiRoot), NULL, &uiRoot, params[kRoot].min, params[kRoot].max);
+    // only send value if updated -- and might not be taken into account if game is running
+    if ((int)uiRoot != root) {
+      // note: output parameters will be fired back
+      setParameterValue(kRoot, (int)uiRoot);
+    }
+
+    // same for number of notes/keys
+    // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or inscrease upon changing root)
+    float uiNbNotes = nbNotes;
+    GuiSliderBar(layoutRecs[4], TextFormat("Number of keys: %d", (int)uiNbNotes), NULL, &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
+    if ((int)uiNbNotes != nbNotes) {
+      setParameterValue(kNbNotes, (int)uiNbNotes);
+    }
+
+    // this label shoul be aligned as with widgets legends, revert style temporarily
+    GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_RIGHT);
+    GuiLabel(layoutRecs[18], "Scale");
+    GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
     ButtonScaleCPressed = GuiButton(layoutRecs[5], "C"); 
     ButtonScaleCsPressed = GuiButton(layoutRecs[6], "C#"); 
     ButtonScaleDPressed = GuiButton(layoutRecs[7], "D"); 
@@ -209,14 +260,33 @@ protected:
     ButtonScaleAPressed = GuiButton(layoutRecs[14], "A"); 
     ButtonScaleAsPressed = GuiButton(layoutRecs[15], "A#"); 
     ButtonScaleBPressed = GuiButton(layoutRecs[16], "B"); 
-    GuiCheckBox(layoutRecs[17], "Shall not pass", &CheckBoxShallNotPassChecked);
-    GuiLabel(layoutRecs[18], "Scale");
-    GuiSliderBar(layoutRecs[19], "Rounds for miss", NULL, &SliderBarRoundsValue, 0, 100);
-    GuiLabel(layoutRecs[20], "Missed 0/0");
-    GuiLabel(layoutRecs[21], "Current best: 0");
-    
 
-    drawPiano({ getCanvasWidth() * 0.1 / 2, 300.0f }, { getCanvasWidth() * 0.9, 100.0f }, root, nbNotes);
+    // --- end disable part of the UI during game ---
+    if (isRunning(status)) {
+      // TODO
+    }
+
+    // option about letting notes through on not
+    bool uiShallNotPass = shallNotPass;
+    GuiCheckBox(layoutRecs[17], "Shall not pass", &uiShallNotPass);
+    if (uiShallNotPass != shallNotPass) {
+      // note: we have to sync in ui non-output parameters changed from ui, won't be fired back
+      shallNotPass = uiShallNotPass;
+      setParameterValue(kShallNotPass, uiShallNotPass);
+    }
+
+    // sync rounds for miss
+    float uiRoundsForMiss = roundsForMiss;
+    GuiSliderBar(layoutRecs[19], TextFormat("Rounds for miss: %d", (int)uiRoundsForMiss ), NULL, &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
+    if ((int)uiRoundsForMiss != roundsForMiss) {
+      roundsForMiss = (int)uiRoundsForMiss;
+      setParameterValue(kRoundsForMiss, (int)uiRoundsForMiss);
+    }
+
+    GuiLabel(layoutRecs[20], TextFormat("Missed %d/%d", nbMiss, maxMiss));
+    GuiLabel(layoutRecs[21], TextFormat("Current best: %d", maxRound));
+
+    drawPiano({ getCanvasWidth() * 0.1f / 2, 300.0f }, { getCanvasWidth() * 0.9f, 100.0f }, root, nbNotes);
 
     DrawFPS(10, 10);
   }

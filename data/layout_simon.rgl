@@ -9,10 +9,10 @@
 #
 r 0 40 -1 -1
 a 001 anchor01 1056 216 1
-c 000 16 SliderRoot 0 96 312 24 1 Root note
-c 001 4 LabelStatus 0 0 128 24 1 Welcome
-c 002 4 LabelInstructions'' 0 32 264 24 1 Press Start for a new game
-c 003 5 ButtonStart 0 64 120 24 1 Start
+c 000 4 LabelStatus 0 0 128 24 1 Welcome
+c 001 4 LabelInstructions'' 0 32 264 24 1 Press Start for a new game
+c 002 5 ButtonStart 0 64 120 24 1 Start
+c 003 16 SliderRoot 0 96 312 24 1 Root note
 c 004 17 SliderBarNbKeys 0 128 312 24 1 Number of keys
 c 005 5 ButtonScaleC 0 160 32 24 1 C
 c 006 5 ButtonScaleCs 40 160 32 24 1 C#
