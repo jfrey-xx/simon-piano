@@ -6,6 +6,7 @@
 START_NAMESPACE_DISTRHO
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
+#include "style_qualya.h"
 
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
@@ -54,12 +55,15 @@ RayUI::RayUI(uint newFPS)
   // init raylib -- unused title with DPF platform
   InitWindow(canvasWidth * scaleFactor, canvasHeight * scaleFactor, "");
   
-  // always animate
+  // always animate if option set
   if (fps > 0) {
     // method called every xx milliseconds
     int refreshTime = 1000/fps;
     addIdleCallback(this, refreshTime);
   }
+
+  // load style
+  GuiLoadStyleQualya();
 
   // init rendering texture
   canvas = LoadRenderTexture(canvasWidth, canvasHeight);
