@@ -239,14 +239,58 @@ protected:
     GuiLabel(layoutRecs[18], "Scale");
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
 
+    // first white keys
+    GuiSetStyle(TOGGLE, BORDER_COLOR_NORMAL, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_NORMAL, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_NORMAL, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_FOCUSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_FOCUSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_PRESSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0x323232ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_PRESSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_DISABLED, (int)0x515151ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0x000000ff);
     for (int i=0; i < 12; i++) {
-      bool scaleToggle = scale[i];
-      GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
-      if (scaleToggle != scale[i]) {
-        setParameterValue(kScaleC + i, !scale[i]);
+      if(isKeyWhite(i)) {
+	// toggles are inverted, we activate to disable note
+	bool scaleToggle = !scale[i];
+	GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
+	if (scaleToggle != !scale[i]) {
+	  setParameterValue(kScaleC + i, !scale[i]);
+	}
       }
     }
 
+    // then black keys
+    GuiSetStyle(TOGGLE, BORDER_COLOR_NORMAL, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_NORMAL, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_NORMAL, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_FOCUSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0x515151ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_FOCUSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_PRESSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_PRESSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_DISABLED, (int)0x323232ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0xffffffff);
+    for (int i=0; i < 12; i++) {
+      if(!isKeyWhite(i)) {
+	bool scaleToggle = !scale[i];
+	GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
+	if (scaleToggle != !scale[i]) {
+	  setParameterValue(kScaleC + i, !scale[i]);
+	}
+      }
+    }
+
+    // NOTE: no need to go back to default style for toggle as it is no used (yet?) elsewhere
+
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+
+    
     // --- end disable part of the UI during game ---
     if (isRunning(status)) {
       // TODO
