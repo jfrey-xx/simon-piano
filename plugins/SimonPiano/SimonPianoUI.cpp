@@ -20,6 +20,8 @@ enum KeyIdx
   WHITE_KEY_CORRECT,
   BLACK_KEY_INCORRECT,
   WHITE_KEY_INCORRECT,
+  BLACK_KEY_PLAY,
+  WHITE_KEY_PLAY,
   BLACK_KEY_DEBUG,
   WHITE_KEY_DEBUG
 };
@@ -149,8 +151,8 @@ protected:
     Vector2 anchor = { 110, 10 };
 
     Rectangle layoutRecs[22] = {
-        (Rectangle){ anchor.x + 0, anchor.y + 0, 128, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 32, 264, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 0, 472, 24 },
+        (Rectangle){ anchor.x + 0, anchor.y + 32, 472, 24 },
         (Rectangle){ anchor.x + 0, anchor.y + 64, 120, 24 },
         (Rectangle){ anchor.x + 0, anchor.y + 96, 312, 24 },
         (Rectangle){ anchor.x + 0, anchor.y + 128, 312, 24 },
@@ -237,7 +239,6 @@ protected:
     GuiLabel(layoutRecs[18], "Scale");
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
 
-    bool scaleToggles[12];
     for (int i=0; i < 12; i++) {
       bool scaleToggle = scale[i];
       GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
@@ -334,12 +335,18 @@ private:
     case WHITE_KEY_INCORRECT:
       spriteShift = 21;
       break;
+    case BLACK_KEY_PLAY:
+      spriteShift = 11;
+      break;
+    case WHITE_KEY_PLAY:
+      spriteShift = 9;
+      break;
     case BLACK_KEY_DEBUG:
-      spriteShift = 10;
+      spriteShift = 3;
       break;
     default:
     case WHITE_KEY_DEBUG:
-      spriteShift = 8;
+      spriteShift = 1;
       break;
     }
     
@@ -405,6 +412,11 @@ private:
 	  case PLAYING_OVER:
 	    sprite = WHITE_KEY_INCORRECT;
 	    break;
+	    // notes outside game
+	  case WAITING:
+	  case GAMEOVER:
+	    sprite = WHITE_KEY_PLAY;
+	    break;
 	  default:
 	    // debug
 	    sprite = WHITE_KEY_DEBUG;
@@ -444,6 +456,11 @@ private:
 	  case PLAYING_INCORRECT:
 	  case PLAYING_OVER:
 	    sprite = BLACK_KEY_INCORRECT;
+	    break;
+	    // notes outside game
+	  case WAITING:
+	  case GAMEOVER:
+	    sprite = BLACK_KEY_PLAY;
 	    break;
 	  default:
 	    // debug
