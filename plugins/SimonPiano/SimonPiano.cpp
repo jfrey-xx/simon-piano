@@ -487,11 +487,20 @@ protected:
   }
 
   void newGame() {
-    reset();
-    status = STARTING;
-    // reset counters
-    lastTime = curTime;
-    round = 0;
+    // we present starting if the entire scale is disabled
+    bool isScale = false;
+    for (int i = 0; i < 12; i++) {
+      if (effectiveScale[i]) {
+        isScale = true;
+      }
+    }
+    if (isScale) {
+      reset();
+      status = STARTING;
+      // reset counters
+      lastTime = curTime;
+      round = 0;
+    }
   }
 
   // starting new instructions
