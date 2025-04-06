@@ -176,6 +176,7 @@ protected:
     };
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+    GuiSetState(STATE_NORMAL);
     
     switch (status) {
     case WAITING:
@@ -206,9 +207,10 @@ protected:
       GuiLabel(layoutRecs[1], TextFormat("Play after me!"));
       break;
     }
-    
+
+    // disable part of the UI during play
     if (isRunning(status)) {
-      // TODO, set disabled!
+      GuiSetState(STATE_DISABLED);
     }
     
     if(GuiButton(layoutRecs[2], "Start")) {
@@ -227,7 +229,7 @@ protected:
     }
 
     // same for number of notes/keys
-    // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or inscrease upon changing root)
+    // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or increase upon changing root)
     float uiNbNotes = nbNotes;
     GuiSliderBar(layoutRecs[4], TextFormat("Number of keys: %d", (int)uiNbNotes), NULL, &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
     if ((int)uiNbNotes != nbNotes) {
@@ -238,20 +240,19 @@ protected:
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_RIGHT);
     GuiLabel(layoutRecs[18], "Scale");
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
-
     // first white keys
     GuiSetStyle(TOGGLE, BORDER_COLOR_NORMAL, (int)0x000000ff);
     GuiSetStyle(TOGGLE, BASE_COLOR_NORMAL, (int)0xffffffff);
     GuiSetStyle(TOGGLE, TEXT_COLOR_NORMAL, (int)0x000000ff);
     GuiSetStyle(TOGGLE, BORDER_COLOR_FOCUSED, (int)0x000000ff);
-    GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0x515151ff);
     GuiSetStyle(TOGGLE, TEXT_COLOR_FOCUSED, (int)0x000000ff);
     GuiSetStyle(TOGGLE, BORDER_COLOR_PRESSED, (int)0x000000ff);
-    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0x323232ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0xd9d9d9ff);
     GuiSetStyle(TOGGLE, TEXT_COLOR_PRESSED, (int)0x000000ff);
-    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0xd9d9d9ff);
     GuiSetStyle(TOGGLE, BASE_COLOR_DISABLED, (int)0x515151ff);
-    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0xd9d9d9ff);
     for (int i=0; i < 12; i++) {
       if(isKeyWhite(i)) {
 	// toggles are inverted, we activate to disable note
@@ -271,11 +272,11 @@ protected:
     GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0x515151ff);
     GuiSetStyle(TOGGLE, TEXT_COLOR_FOCUSED, (int)0xffffffff);
     GuiSetStyle(TOGGLE, BORDER_COLOR_PRESSED, (int)0xffffffff);
-    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0x323232ff);
     GuiSetStyle(TOGGLE, TEXT_COLOR_PRESSED, (int)0xffffffff);
-    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0xd9d9d9ff);
     GuiSetStyle(TOGGLE, BASE_COLOR_DISABLED, (int)0x323232ff);
-    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0xd9d9d9ff);
     for (int i=0; i < 12; i++) {
       if(!isKeyWhite(i)) {
 	bool scaleToggle = !scale[i];
@@ -292,9 +293,7 @@ protected:
 
     
     // --- end disable part of the UI during game ---
-    if (isRunning(status)) {
-      // TODO
-    }
+    GuiSetState(STATE_NORMAL);
 
     // option about letting notes through on not
     bool uiShallNotPass = shallNotPass;
