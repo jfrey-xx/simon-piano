@@ -41,7 +41,7 @@ FILES_UI += \
 include $(RAYUI_PATH)/../dpf/Makefile.plugins.mk
 
 # Adding  custom libs
-BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF
+BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF -DGRAPHICS_API_OPENGL_ES2
 # for raylib
 BUILD_C_FLAGS += -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF -DGRAPHICS_API_OPENGL_ES2
 
