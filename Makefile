@@ -8,7 +8,7 @@ USE_GLES2=true
 
 include dpf/Makefile.base.mk
 
-all: dgl examples gen
+all: dgl examples gen plugins
 
 # --------------------------------------------------------------
 
