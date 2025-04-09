@@ -1,6 +1,6 @@
 [submodule "dpf"]
 	path = dpf
-	url = https://github.com/DISTRHO/DPF.git
+	url = https://github.com/jfrey-xx/DPF.git
 [submodule "raylib"]
 	path = src/raylib
 	url = git@github.com:jfrey-xx/raylib_dpf.git

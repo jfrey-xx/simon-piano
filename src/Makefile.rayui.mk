@@ -53,8 +53,7 @@ endif
 # --------------------------------------------------------------
 # tune for WASM
 
-# adjust flags for web version (with target jack)
-# FIXME: for requestMIDI() to work as of emsdk 4.0.6, WebBrigde.hpp in DPF needs to be modified, Module._malloc -> _malloc
+# adjust flags for web version
 ifeq ($(WASM),true)
 # embed resources, otherwise cannot be accessed
 LINK_FLAGS += --preload-file=./resources
@@ -63,6 +62,11 @@ LINK_FLAGS += -sALLOW_MEMORY_GROWTH
 # will be used in conjunction with PLATFORM_WEB
 LINK_FLAGS += -sUSE_GLFW=3
 LINK_FLAGS += --shell-file=./emscripten/shell.html
+endif
+
+# override target
+ifeq ($(WASM),true)
+TARGETS = jack
 endif
 
 # --------------------------------------------------------------
