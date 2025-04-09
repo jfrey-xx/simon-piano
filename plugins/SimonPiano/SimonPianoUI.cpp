@@ -4,6 +4,10 @@
 
 #include "RayUI.hpp"
 #include "SimonUtils.h"
+// for requestMIDI for web
+#if defined(DISTRHO_OS_WASM)
+#include "DistrhoStandaloneUtils.hpp"
+#endif
 
 START_NAMESPACE_DISTRHO
 
@@ -318,9 +322,16 @@ protected:
     drawPiano({ getCanvasWidth() * 0.1f / 2, 300.0f }, { getCanvasWidth() * 0.9f, 100.0f }, root, nbNotes);
 
     DrawFPS(10, 10);
+
+    // HOTFIX: an additional button (aligned with Start) on the web to ask for webmidi permission
+#if defined(DISTRHO_OS_WASM)
+    if (supportsMIDI() && !isMIDIEnabled() && GuiButton({layoutRecs[2].x + layoutRecs[2].width + 40, layoutRecs[2].y, 200, layoutRecs[2].height}, "Enable WebMIDI")) {
+      requestMIDI();
+    }
+#endif
   }
 
-    // ----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------------- --------------
 
 private:
   // texture for piano keys

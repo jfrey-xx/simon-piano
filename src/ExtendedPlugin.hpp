@@ -10,8 +10,9 @@
 
 
 // Wrapper to factorize code between plugins. Consider at the moment at most one input and one output
-// NOTE: this wrapper derives from Botania, dealing here with regular floats (instead of fixed float). We use a fixed-size buffer to interleave MIDI messages.
+// NOTE: this wrapper derives from Obtuse, dealing here with regular floats (instead of fixed float). We use a fixed-size buffer to interleave MIDI messages.
 // TODO: option to process MIDI event with frame-perfect accuracy? (at the moment precision of the call is chunk size)
+// FIXME: only take into account first input and first output (if any)
 class ExtendedPlugin : public Plugin {
 
 public:
@@ -117,7 +118,12 @@ protected:
     uint8_t type = 144;
     // build event
     MidiEvent midiEvent;
+    // HOTFIX, with webmidi and WebBridge, the frame number is used as an offset in ms, probably not what we want
+#if defined(DISTRHO_OS_WASM)
+    midiEvent.frame = 0;
+#else
     midiEvent.frame = frame;
+#endif
     midiEvent.size = 3;
     midiEvent.data[0] = type + channel;
     midiEvent.data[1] = note;
@@ -135,7 +141,12 @@ protected:
     uint8_t type = 128;
     // build event
     MidiEvent midiEvent;
+    // HOTFIX, with webmidi and WebBridge, the frame number is used as an offset in ms, not what we want
+#if defined(DISTRHO_OS_WASM)
+    midiEvent.frame = 0;
+#else
     midiEvent.frame = frame;
+#endif
     midiEvent.size = 3;
     midiEvent.data[0] = type + channel;
     midiEvent.data[1] = note;

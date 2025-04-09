@@ -40,10 +40,30 @@ FILES_UI += \
 # now the regular makefile for plugins (order matters)
 include $(RAYUI_PATH)/../dpf/Makefile.plugins.mk
 
-# Adding  custom libs
-BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF -DGRAPHICS_API_OPENGL_ES2
-# for raylib
-BUILD_C_FLAGS += -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF -DGRAPHICS_API_OPENGL_ES2
+# points to headers files and options for raylibs
+# HOTFIX for WASM, switch to gles3 and platform web will override pugl
+ifeq ($(WASM),true)
+BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3
+BUILD_C_FLAGS += -I$(RAYUI_PATH)/raylib/src -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3
+else
+BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF  -DGRAPHICS_API_OPENGL_ES2
+BUILD_C_FLAGS += -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF  -DGRAPHICS_API_OPENGL_ES2
+endif
+
+# --------------------------------------------------------------
+# tune for WASM
+
+# adjust flags for web version (with target jack)
+# FIXME: for requestMIDI() to work as of emsdk 4.0.6, WebBrigde.hpp in DPF needs to be modified, Module._malloc -> _malloc
+ifeq ($(WASM),true)
+# embed resources, otherwise cannot be accessed
+LINK_FLAGS += --preload-file=./resources
+# needed for loading custom raygui style
+LINK_FLAGS += -sALLOW_MEMORY_GROWTH
+# will be used in conjunction with PLATFORM_WEB
+LINK_FLAGS += -sUSE_GLFW=3
+LINK_FLAGS += --shell-file=./emscripten/shell.html
+endif
 
 # --------------------------------------------------------------
 # Export resources

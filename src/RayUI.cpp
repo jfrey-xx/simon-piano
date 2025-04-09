@@ -138,7 +138,9 @@ void RayUI::onDisplay()
 bool RayUI::onMotion(const MotionEvent& event)
 {
   // unused: event.mod currently active keyboard modifier
+#if defined(PLATFORM_DPF)
   SetMousePosition(event.pos.getX(), event.pos.getY());
+#endif
   return false;
 }
 
@@ -147,11 +149,13 @@ bool RayUI::onMouse(const MouseEvent& event)
 {
   // unused: event.mod currently active keyboard modifier
   // mouse button event should start from 1
+#if defined(PLATFORM_DPF)
   int button = event.button;
   if (button > 0) {
     SendMouseEvent(button-1, event.press, event.pos.getX(), event.pos.getY());
     return false;
   }
+#endif
   // we do not catch a button 0 that should not happen...
   return true;
 }
