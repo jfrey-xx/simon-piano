@@ -4,7 +4,6 @@
 
 // put here raygui implementation
 START_NAMESPACE_DISTRHO
-#define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 #include "style_qualya.h"
 

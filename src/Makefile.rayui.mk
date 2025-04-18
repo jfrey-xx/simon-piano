@@ -29,26 +29,19 @@ RAYUI_PATH := $(dir $(lastword $(MAKEFILE_LIST)))
 
 # adding required file for UI
 FILES_UI += \
-	$(RAYUI_PATH)/RayUI.cpp \
-	$(RAYUI_PATH)/raylib/src/rcore.c \
-	$(RAYUI_PATH)/raylib/src/rshapes.c \
-	$(RAYUI_PATH)/raylib/src/rtext.c \
-	$(RAYUI_PATH)/raylib/src/rtextures.c \
-	$(RAYUI_PATH)/raylib/src/rmodels.c \
-	$(RAYUI_PATH)/raylib/src/utils.c
+	$(RAYUI_PATH)/RayUI.cpp 
 
 # now the regular makefile for plugins (order matters)
 include $(RAYUI_PATH)/../dpf/Makefile.plugins.mk
 
-# points to headers files and options for raylibs
-# HOTFIX for WASM, switch to gles3 and platform web will override pugl
-ifeq ($(WASM),true)
-BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3
-BUILD_C_FLAGS += -I$(RAYUI_PATH)/raylib/src -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3
-else
-BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF  -DGRAPHICS_API_OPENGL_ES2
-BUILD_C_FLAGS += -I$(RAYUI_PATH)/raylib/src -DPLATFORM_DPF  -DGRAPHICS_API_OPENGL_ES2
+# points to headers files for raylib
+BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src
+# we need to adapt how RayUI is tight to raylib depending on platform
+ifeq ($(WASM),)
+BUILD_CXX_FLAGS += -DPLATFORM_DPF
 endif
+
+LINK_FLAGS += $(RAYUI_PATH)/raylib/src/libraylib.a
 
 # --------------------------------------------------------------
 # tune for WASM
@@ -119,3 +112,13 @@ ifeq ($(findstring vst2,$(TARGETS)),vst2)
 	ln -snf $(RESOURCES) $(VST2_RESOURCES_DIR)
 endif
 endif
+
+$(RAYUI_PATH)/raylib/src/libraylib.a:
+# HOTFIX for WASM, switch to gles3 and platform web will override pugl
+ifeq ($(WASM),true)
+	$(MAKE) all -C $(RAYUI_PATH)/raylib/src PLATFORM=PLATFORM_WEB GRAPHICS=GRAPHICS_API_OPENGL_ES3 RAYLIB_MODULE_AUDIO=FALSE RAYLIB_MODULE_RAYGUI=TRUE RAYLIB_MODULE_RAYGUI_PATH=../../
+else
+	$(MAKE) all -C $(RAYUI_PATH)/raylib/src PLATFORM=PLATFORM_DPF GRAPHICS=GRAPHICS_API_OPENGL_ES2 RAYLIB_MODULE_AUDIO=FALSE RAYLIB_MODULE_RAYGUI=TRUE RAYLIB_MODULE_RAYGUI_PATH=../../
+endif
+
+raylib: $(RAYUI_PATH)/raylib/src/libraylib.a

@@ -34,4 +34,4 @@ include ../../src/Makefile.rayui.mk
 # --------------------------------------------------------------
 # And... action
 
-all: $(TARGETS) resources
+all: raylib $(TARGETS) resources

@@ -5,4 +5,5 @@
 all: 
 
 clean:
-	rm -rf raylib/src/*.d raylib/src/*.o *.d *.o
+	rm -rf *.d *.o
+	$(MAKE) clean -C raylib/src
