@@ -36,12 +36,15 @@ include $(RAYUI_PATH)/../dpf/Makefile.plugins.mk
 
 # points to headers files for raylib
 BUILD_CXX_FLAGS += -I$(RAYUI_PATH) -I$(RAYUI_PATH)/raylib/src
-# we need to adapt how RayUI is tight to raylib depending on platform
 ifeq ($(WASM),)
+# we need to adapt how RayUI is tight to raylib depending on platform
 BUILD_CXX_FLAGS += -DPLATFORM_DPF
+LINK_FLAGS += $(RAYUI_PATH)/raylib/src/libraylib.a
+else
+# special satic lib name for web version
+LINK_FLAGS += $(RAYUI_PATH)/raylib/src/libraylib.web.a
 endif
 
-LINK_FLAGS += $(RAYUI_PATH)/raylib/src/libraylib.a
 
 # --------------------------------------------------------------
 # tune for WASM
@@ -54,6 +57,7 @@ LINK_FLAGS += --preload-file=./resources
 LINK_FLAGS += -sALLOW_MEMORY_GROWTH
 # will be used in conjunction with PLATFORM_WEB
 LINK_FLAGS += -sUSE_GLFW=3
+# custom template for the final web page
 LINK_FLAGS += --shell-file=./emscripten/shell.html
 endif
 
