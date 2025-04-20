@@ -4,7 +4,9 @@
 # Created by falkTX
 #
 
+# select opengl version, go for max compatibility, make it visible for all spawned make (especially dgl)
 USE_GLES2=true
+export USE_GLES2
 
 include dpf/Makefile.base.mk
 
