@@ -3,25 +3,6 @@
 # Makefile for using raylib UI through DPF
 
 # --------------------------------------------------------------
-# list resources
-
-# everything located in a "resources" folder will be bundled with output -- even if empty 
-RESOURCES = $(wildcard $(CURDIR)/resources)
-# tuning or jacks, since plugins will share the same resource folder we want there to link all content instead
-RESOURCES_CONTENT=$(wildcard $(CURDIR)/resources/*)
-# include hidden files
-RESOURCES_CONTENT+=$(wildcard $(CURDIR)/resources/.*)
-# ...but not link to current and parent folder
-RESOURCES_CONTENT:=$(filter-out $(CURDIR)/resources/. $(CURDIR)/resources/.., $(RESOURCES_CONTENT))
-
-# if we have resources to copy, we need to set bundle to all targets with resources
-# WARNING: in case resources come and go we might have duplicated those targets
-ifneq ($(RESOURCES),)
-	USE_VST2_BUNDLE=true
-	USE_CLAP_BUNDLE=true
-endif
-
-# --------------------------------------------------------------
 # tune for raylib
 
 # set path relative to this folder location no matter where the file is included
@@ -43,6 +24,32 @@ LINK_FLAGS += $(RAYUI_PATH)/raylib/src/libraylib.a
 else
 # special satic lib name for web version
 LINK_FLAGS += $(RAYUI_PATH)/raylib/src/libraylib.web.a
+endif
+
+# --------------------------------------------------------------
+# list resources
+
+# note: WASM defined through Makefile.plugins.mk inclusion
+ifeq ($(WASM),true)
+# with emscripten the true "resources" folder is exported, 
+# WARNING: do not put in there files with the name-project.wasm, .js, .html, or .data, they will conflict with emscripten export
+RESOURCES = $(wildcard $(CURDIR)/resources_web)
+else
+# everything located in a "resources" folder will be bundled with output -- even if empty 
+RESOURCES = $(wildcard $(CURDIR)/resources)
+endif
+# tuning or jacks, since plugins will share the same resource folder we want there to link all content instead
+RESOURCES_CONTENT=$(wildcard $(RESOURCES)/*)
+# include hidden files
+RESOURCES_CONTENT+=$(wildcard $(RESOURCES)/.*)
+# ...but not link to current and parent folder
+RESOURCES_CONTENT:=$(filter-out $(RESOURCES)/. $(RESOURCES)/.., $(RESOURCES_CONTENT))
+
+# if we have resources to copy, we need to set bundle to all targets with resources
+# WARNING: in case resources come and go we might have duplicated those targets
+ifneq ($(RESOURCES),)
+	USE_VST2_BUNDLE=true
+	USE_CLAP_BUNDLE=true
 endif
 
 
@@ -72,11 +79,16 @@ endif
 # set destination folders for resources, as per DistrhoPluginUtils.hpp
 VST3_RESOURCES_DIR=$(TARGET_DIR)/$(NAME).vst3/Contents/Resources
 LV2_RESOURCES_DIR=$(TARGET_DIR)/$(NAME).lv2/resources
+# special case for jack target, use in web export: copy to root
+ifeq ($(WASM),true)
+JACK_RESOURCES_DIR=$(TARGET_DIR)/
+else
 ifeq ($(MACOS_APP_BUNDLE),true)
 JACK_RESOURCES_DIR=$(TARGET_DIR)/$(NAME).app/Contents/Resources
 else
 JACK_RESOURCES_DIR=$(TARGET_DIR)/resources
 endif
+endif # WASM true
 ifeq ($(MACOS),true)
 VST2_RESOURCES_DIR=$(TARGET_DIR)/$(NAME).vst/Contents/Resources
 CLAP_RESOURCES_DIR=$(TARGET_DIR)/$(NAME).clap/Contents/Resources
