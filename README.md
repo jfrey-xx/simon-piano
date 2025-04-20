@@ -7,6 +7,15 @@ During instructions defaults to first MIDI channel and full velocity, while play
 
 Only note on/off messages are passed through.
 
+# Dev
+
+## web export
+
+- install emsdk (tested with 4.0.6 running on Ubuntu 24.04)
+- `emsdk activate`
+- `source "/locatin/to/emsdk/emsdk_env.sh"`
+- `CXX=em++ CC=emcc make`
+
 # TODO
 
 - debounce for MIDI input?
