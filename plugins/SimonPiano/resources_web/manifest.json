@@ -1,0 +1,17 @@
+{
+    "name": "Simon-Piano",
+    "short_name": "Simon-Piano",
+    "theme_color": "#00D9D9",
+    "background_color": "#003232",
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "scope": ".",
+    "start_url": "simon-piano.html",
+    "icons": [
+        {
+            "src": "./favicon.png",
+            "type": "image/png",
+            "sizes": "32x32"
+        }
+    ]
+}
