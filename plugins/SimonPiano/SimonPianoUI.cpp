@@ -402,7 +402,7 @@ private:
   // extract and draw sprite id a said location and size
   void drawKey(KeyIdx idx, Vector2 pos, Vector2 size) {
     // fixed size for all keys in the sprite sheet
-    static const Rectangle spriteSize = {0, 0, 8, 32};
+    static const Rectangle spriteSize = {0, 0, 16, 62};
     // picking the right position
     int spriteShift = 0;
     switch(idx) {
