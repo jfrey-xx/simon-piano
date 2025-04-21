@@ -213,7 +213,33 @@ protected:
       GuiSetState(STATE_DISABLED);
     }
 
+    int preset = getPresetIdx(root, nbNotes, scale);
+    if (preset < 0) {
+      // failsafe, last should be custom
+      preset = NB_PRESETS - 1;
+    }
+    // somehow presets, a tad tedious
+    int uiPreset = preset;
 
+    GuiComboBox(layoutRecs[3], presetsNames, &uiPreset);
+    if (uiPreset != preset) {
+      // special case for last preset, custom, we force cycle because nothing would change upon selection
+      if (uiPreset >= NB_PRESETS - 1) {
+	uiPreset = 0;
+      }
+      if (presets[uiPreset].root >= 0 && presets[uiPreset].root != root) {
+	setParameterValue(kRoot, presets[uiPreset].root);
+      }
+      if (presets[uiPreset].nbNotes >= 0 && presets[uiPreset].nbNotes != nbNotes) {
+	setParameterValue(kNbNotes, presets[uiPreset].nbNotes);
+      }
+      for (int i=0; i < 12; i++) {
+	if (presets[uiPreset].scale[i] >= 0 && presets[uiPreset].scale[i] != scale[i]) {
+	  setParameterValue(kScaleC + i, !scale[i]);
+	}
+      }
+    }
+    
     // An additional button (aligned with Start) on the web to ask for webmidi permission
 #if defined(DISTRHO_OS_WASM)
     if (supportsMIDI() && !isMIDIEnabled() && GuiButton(layoutRecs[4], "Enable WebMIDI")) {

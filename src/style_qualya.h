@@ -11,7 +11,8 @@
 //                                                                              //
 //////////////////////////////////////////////////////////////////////////////////
 
-#define QUALYA_STYLE_PROPS_COUNT  17
+// Note: one manual property compared to styler
+#define QUALYA_STYLE_PROPS_COUNT  18
 
 // Custom style name: Qualya
 static const GuiStyleProp qualyaStyleProps[QUALYA_STYLE_PROPS_COUNT] = {
@@ -32,6 +33,8 @@ static const GuiStyleProp qualyaStyleProps[QUALYA_STYLE_PROPS_COUNT] = {
     { 0, 18, (int)0xb6efefff },    // DEFAULT_LINE_COLOR 
     { 0, 19, (int)0x181818ff },    // DEFAULT_BACKGROUND_COLOR 
     { 0, 20, (int)0x00000030 },    // DEFAULT_TEXT_LINE_SPACING 
+    // MANUALLY EDITED
+    { 7, 16, 40 },    // COMBOBOX COMBO_BUTTON_WIDTH, default 32
 };
 
 // WARNING: This style uses a custom font: "" (size: 32, spacing: 0)
