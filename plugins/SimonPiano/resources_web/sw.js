@@ -1,4 +1,4 @@
-CACHE_NAME = "cache_v1.0";
+CACHE_NAME = "simon_piano_cache_v1.0";
 URL_CACHE = [
   'simon-piano.html',
   'simon-piano.wasm',
