@@ -27,7 +27,10 @@ enum KeyIdx
   BLACK_KEY_PLAY,
   WHITE_KEY_PLAY,
   BLACK_KEY_DEBUG,
-  WHITE_KEY_DEBUG
+  WHITE_KEY_DEBUG,
+  BACKGROUND_LEFT,
+  BACKGROUND_RIGHT,
+  BACKGROUND_FELT,
 };
 
 // return true if the key for this note is C, D, E, F, G, A, B
@@ -400,9 +403,10 @@ private:
   bool shallNotPass = params[kShallNotPass].def;
 
   // extract and draw sprite id a said location and size
+  // also background, hacking slitghly
   void drawKey(KeyIdx idx, Vector2 pos, Vector2 size) {
     // fixed size for all keys in the sprite sheet
-    static const Rectangle spriteSize = {0, 0, 16, 62};
+    static const Rectangle spriteSize = {0, 0, 16, 64};
     // picking the right position
     int spriteShift = 0;
     switch(idx) {
@@ -445,6 +449,15 @@ private:
     case BLACK_KEY_DEBUG:
       spriteShift = 3;
       break;
+    case BACKGROUND_LEFT:
+      spriteShift = 24;
+      break;
+    case BACKGROUND_RIGHT:
+      spriteShift = 25;
+      break;
+    case BACKGROUND_FELT:
+      spriteShift = 26;
+      break;
     default:
     case WHITE_KEY_DEBUG:
       spriteShift = 1;
@@ -470,15 +483,17 @@ private:
       uiNbWhiteKeys += 0.5;
     }
     // around keyboard, between keys -- would be same ratio for 12 notes
-    Vector2 margins = {size.x * 0.01f, size.y * 0.01f};
+    Vector2 margins = {size.x * 0.02f, 0.0f};
     // black keys over whites, width of a key will be conditioned by the former
     Vector2 keySize;
     keySize.x = (size.x  - margins.x * 2) / uiNbWhiteKeys;
     keySize.y = size.y - margins.y * 2;
 
-    // draw the background
-    // TODO: debug here
-    DrawRectangle(pos.x, pos.y, size.x, size.y, BLUE);   
+    // draw the background, sides
+    drawKey(BACKGROUND_LEFT, {pos.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y});   
+    drawKey(BACKGROUND_RIGHT, {pos.x + size. x -margins.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y});   
+    // background
+    drawKey(BACKGROUND_FELT, {pos.x + margins.x, pos.y + margins.y}, {size.x - 2 * margins.x, size.y - 2*margins.y});   
 
     // base position for current key
     Vector2 startPos = {pos.x + margins.x, pos.y + margins.y};
