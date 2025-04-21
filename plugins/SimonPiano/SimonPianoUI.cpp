@@ -184,15 +184,33 @@ protected:
       break;
     }
 
+    // same button for start/stop
+    if (isRunning(status)) {
+      // highlight button for abort
+      GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, GuiGetStyle(DEFAULT, BASE_COLOR_PRESSED));
+      GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, GuiGetStyle(DEFAULT, TEXT_COLOR_PRESSED));
+      GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, GuiGetStyle(DEFAULT, TEXT_COLOR_FOCUSED));
+      GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, GuiGetStyle(DEFAULT, BASE_COLOR_FOCUSED));
+      if(GuiButton(layoutRecs[2], "Abort")) {
+	// send false/true cylce to make sure to toggle
+	setParameterValue(kStart, true);
+	setParameterValue(kStart, false);
+      }
+      GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, GuiGetStyle(DEFAULT, BASE_COLOR_NORMAL));
+      GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, GuiGetStyle(DEFAULT, TEXT_COLOR_NORMAL));
+      GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, GuiGetStyle(DEFAULT, BASE_COLOR_FOCUSED));
+      GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, GuiGetStyle(DEFAULT, TEXT_COLOR_FOCUSED));
+    } else {
+      if(GuiButton(layoutRecs[2], "Start")) {
+	// send false/true cylce to make sure to toggle
+	setParameterValue(kStart, false);
+	setParameterValue(kStart, true);
+      }
+    }
+
     // disable part of the UI during play
     if (isRunning(status)) {
       GuiSetState(STATE_DISABLED);
-    }
-    
-    if(GuiButton(layoutRecs[2], "Start")) {
-      // send false/true cylce to make sure to toggle
-      setParameterValue(kStart, false);
-      setParameterValue(kStart, true);
     }
 
 

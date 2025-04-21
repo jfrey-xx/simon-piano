@@ -326,10 +326,15 @@ protected:
   void setParameterValue(uint32_t index, float value) override {
     switch (index) {
     case kStart:
-      // only effectively start if waiting for it
-      if (start == false && value != start) {
-        if (!isRunning(status)) {
+      // effectively start if waiting for it
+      if (value != start) {
+        // effectively start if waiting for it
+        if (value && !isRunning(status)) {
           newGame();
+        }
+        // un-start: stopping the game
+        else if (!value && isRunning(status)) {
+          stop();
         }
       }
       start = value;
@@ -467,11 +472,7 @@ protected:
       if (note == curNote) {
         // sequence is terminated
         if (status == PLAYING_OVER) {
-          status = GAMEOVER;
-          // level up!
-          if (round > 0 && round - 1 > maxRound) {
-            maxRound = round - 1;
-          }
+          stop();
         }
         // still in play, either next or new round
         else {
@@ -487,7 +488,7 @@ protected:
   }
 
   void newGame() {
-    // we present starting if the entire scale is disabled
+    // we prevent starting if the entire scale is disabled
     bool isScale = false;
     for (int i = 0; i < 12; i++) {
       if (effectiveScale[i]) {
@@ -525,7 +526,7 @@ protected:
   // draw another note to the sequence
   void addNote() {
     if (round >= MAX_ROUND) {
-      status = GAMEOVER;
+      stop();
     }
     else if (round >= 0) {
       // brute-force the possible notes considering root, number of notes, scale
@@ -593,6 +594,11 @@ protected:
       }
     }
 
+    // the game might have ended from user call, check here if we need to abort a note
+    if (status == GAMEOVER) {
+        abortCurrentNote(frame);
+    }
+
     // update time
     for (uint32_t i = 0; i < nbSamples; i++) {
       curTime +=  1./ getSampleRate();
@@ -628,6 +634,16 @@ protected:
     }
 
   };
+
+  // abort current play: set status, update max round
+  // note: do not discard current note here since we might be called outside of process()
+  void stop() {
+    status = GAMEOVER;
+    // level up!
+    if (round > 0 && round - 1 > maxRound) {
+      maxRound = round - 1;
+    }
+  }
 
   // reset inner state upon new game
   // NOTE: *not* resetting curNote as is can be needed to abort later on, reset being called outside of run (
