@@ -151,34 +151,6 @@ protected:
    void onCanvasDisplay()
   {
 
-    // upper left reference point for UI
-    Vector2 anchor = { 110, 10 };
-
-    Rectangle layoutRecs[22] = {
-        (Rectangle){ anchor.x + 0, anchor.y + 0, 472, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 32, 472, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 64, 120, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 96, 312, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 128, 312, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 40, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 80, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 120, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 160, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 200, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 240, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 280, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 320, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 360, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 400, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 440, anchor.y + 160, 32, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 192, 24, 24 },
-        (Rectangle){ anchor.x + -80, anchor.y + 160, 72, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 224, 312, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 408, 120, 24 },
-        (Rectangle){ anchor.x + 0, anchor.y + 440, 120, 24 },
-    };
-
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
     GuiSetState(STATE_NORMAL);
     
@@ -192,18 +164,18 @@ protected:
       GuiLabel(layoutRecs[1], TextFormat("Pay attention..."));
       break;
     case INSTRUCTIONS:
-      GuiLabel(layoutRecs[0], TextFormat("Round %d -- step %d", round, step));
+      GuiLabel(layoutRecs[0], TextFormat("Round %d - step %d", round, step));
       GuiLabel(layoutRecs[1], TextFormat("Play after me!"));
       break;
     case GAMEOVER:
-      GuiLabel(layoutRecs[0], TextFormat("Game over during Round %d -- step %d", round, step));
+      GuiLabel(layoutRecs[0], TextFormat("Game over during Round %d - step %d", round, step));
       GuiLabel(layoutRecs[1], TextFormat("Try again!"));
       break;
     case PLAYING_WAIT:
     case PLAYING_CORRECT:
     case PLAYING_INCORRECT:
     case PLAYING_OVER:
-      GuiLabel(layoutRecs[0], TextFormat("Round %d -- step %d", round, step));
+      GuiLabel(layoutRecs[0], TextFormat("Round %d - step %d", round, step));
       GuiLabel(layoutRecs[1], TextFormat("Your turn!"));
       break;
     default:
@@ -223,9 +195,17 @@ protected:
       setParameterValue(kStart, true);
     }
 
+
+    // An additional button (aligned with Start) on the web to ask for webmidi permission
+#if defined(DISTRHO_OS_WASM)
+    if (supportsMIDI() && !isMIDIEnabled() && GuiButton(layoutRecs[4], "Enable WebMIDI")) {
+      requestMIDI();
+    }
+#endif
+
     // sync root note
     float uiRoot = root;
-    GuiSlider(layoutRecs[3], TextFormat("Root note: %d", (int)uiRoot), NULL, &uiRoot, params[kRoot].min, params[kRoot].max);
+    GuiSlider(layoutRecs[5], TextFormat("Root note: %d", (int)uiRoot), NULL, &uiRoot, params[kRoot].min, params[kRoot].max);
     // only send value if updated -- and might not be taken into account if game is running
     if ((int)uiRoot != root) {
       // note: output parameters will be fired back
@@ -235,14 +215,14 @@ protected:
     // same for number of notes/keys
     // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or increase upon changing root)
     float uiNbNotes = nbNotes;
-    GuiSliderBar(layoutRecs[4], TextFormat("Number of keys: %d", (int)uiNbNotes), NULL, &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
+    GuiSliderBar(layoutRecs[6], TextFormat("Number of keys: %d", (int)uiNbNotes), NULL, &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
     if ((int)uiNbNotes != nbNotes) {
       setParameterValue(kNbNotes, (int)uiNbNotes);
     }
 
     // this label shoul be aligned as with widgets legends, revert style temporarily
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_RIGHT);
-    GuiLabel(layoutRecs[18], "Scale");
+    GuiLabel(layoutRecs[7], "Scale");
     GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
     // first white keys
     GuiSetStyle(TOGGLE, BORDER_COLOR_NORMAL, (int)0x000000ff);
@@ -261,7 +241,7 @@ protected:
       if(isKeyWhite(i)) {
 	// toggles are inverted, we activate to disable note
 	bool scaleToggle = !scale[i];
-	GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
+	GuiToggle(layoutRecs[8+i], scaleNotes[i], &scaleToggle);
 	if (scaleToggle != !scale[i]) {
 	  setParameterValue(kScaleC + i, !scale[i]);
 	}
@@ -284,7 +264,7 @@ protected:
     for (int i=0; i < 12; i++) {
       if(!isKeyWhite(i)) {
 	bool scaleToggle = !scale[i];
-	GuiToggle(layoutRecs[5+i], scaleNotes[i], &scaleToggle);
+	GuiToggle(layoutRecs[8+i], scaleNotes[i], &scaleToggle);
 	if (scaleToggle != !scale[i]) {
 	  setParameterValue(kScaleC + i, !scale[i]);
 	}
@@ -301,7 +281,7 @@ protected:
 
     // option about letting notes through on not
     bool uiShallNotPass = shallNotPass;
-    GuiCheckBox(layoutRecs[17], "Shall not pass", &uiShallNotPass);
+    GuiCheckBox(layoutRecs[20], "Shall not pass", &uiShallNotPass);
     if (uiShallNotPass != shallNotPass) {
       // note: we have to sync in ui non-output parameters changed from ui, won't be fired back
       shallNotPass = uiShallNotPass;
@@ -310,25 +290,18 @@ protected:
 
     // sync rounds for miss
     float uiRoundsForMiss = roundsForMiss;
-    GuiSliderBar(layoutRecs[19], TextFormat("Rounds for miss: %d", (int)uiRoundsForMiss ), NULL, &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
+    GuiSliderBar(layoutRecs[21], TextFormat("Rounds for miss: %d", (int)uiRoundsForMiss ), NULL, &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
     if ((int)uiRoundsForMiss != roundsForMiss) {
       roundsForMiss = (int)uiRoundsForMiss;
       setParameterValue(kRoundsForMiss, (int)uiRoundsForMiss);
     }
 
-    GuiLabel(layoutRecs[20], TextFormat("Missed %d/%d", nbMiss, maxMiss));
-    GuiLabel(layoutRecs[21], TextFormat("Current best: %d", maxRound));
+    drawPiano({layoutRecs[22].x, layoutRecs[22].y}, {layoutRecs[22].width, layoutRecs[22].height}, root, nbNotes);
 
-    drawPiano({ getCanvasWidth() * 0.1f / 2, 300.0f }, { getCanvasWidth() * 0.9f, 100.0f }, root, nbNotes);
+    GuiLabel(layoutRecs[23], TextFormat("Missed %d/%d", nbMiss, maxMiss));
+    GuiLabel(layoutRecs[24], TextFormat("Current best: %d", maxRound));
 
     DrawFPS(10, 10);
-
-    // HOTFIX: an additional button (aligned with Start) on the web to ask for webmidi permission
-#if defined(DISTRHO_OS_WASM)
-    if (supportsMIDI() && !isMIDIEnabled() && GuiButton({layoutRecs[2].x + layoutRecs[2].width + 40, layoutRecs[2].y, 200, layoutRecs[2].height}, "Enable WebMIDI")) {
-      requestMIDI();
-    }
-#endif
   }
 
     // -------------------------------------------------------------------------------------------------- --------------
@@ -338,6 +311,36 @@ private:
   Texture2D piano;
   // location of current key in texture
   Rectangle keySpriteRec;
+  // upper left reference point for UI
+  const Vector2 anchor = { 15, 10 };
+  // layout of the GUI
+  const Rectangle layoutRecs[25] = {
+    (Rectangle){ anchor.x + 200, anchor.y + 0, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 40, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 80, 120, 32 },
+    (Rectangle){ anchor.x + 336, anchor.y + 80, 224, 32 },
+    (Rectangle){ anchor.x + 576, anchor.y + 80, 192, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 120, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 160, 568, 32 },
+    (Rectangle){ anchor.x + 48, anchor.y + 200, 144, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 248, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 296, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 344, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 392, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 440, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 488, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 536, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 584, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 632, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 680, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 728, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 240, 32, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 280, 568, 32 },
+    (Rectangle){ anchor.x + 0, anchor.y + 320, 768, 136 },
+    (Rectangle){ anchor.x + 200, anchor.y + 464, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 504, 568, 32 },
+  };
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;
