@@ -12,6 +12,17 @@ RAYUI_PATH := $(dir $(lastword $(MAKEFILE_LIST)))
 FILES_UI += \
 	$(RAYUI_PATH)/RayUI.cpp 
 
+# everything located in a "resources" folder will be bundled with output -- even if empty 
+RESOURCES = $(wildcard $(CURDIR)/resources)
+
+# if we have resources to copy, we need to set bundle to all targets with resources
+# WARNING: in case resources come and go we might have duplicated those targets
+ifneq ($(RESOURCES),)
+# note: to be set before Makefile.plugins.mk inclusions
+	USE_VST2_BUNDLE=true
+	USE_CLAP_BUNDLE=true
+endif
+
 # now the regular makefile for plugins (order matters)
 include $(RAYUI_PATH)/../dpf/Makefile.plugins.mk
 
@@ -34,9 +45,6 @@ ifeq ($(WASM),true)
 # with emscripten the true "resources" folder is exported, 
 # WARNING: do not put in there files with the name-project.wasm, .js, .html, or .data, they will conflict with emscripten export
 RESOURCES = $(wildcard $(CURDIR)/resources_web)
-else
-# everything located in a "resources" folder will be bundled with output -- even if empty 
-RESOURCES = $(wildcard $(CURDIR)/resources)
 endif
 # tuning or jacks, since plugins will share the same resource folder we want there to link all content instead
 RESOURCES_CONTENT=$(wildcard $(RESOURCES)/*)
@@ -44,14 +52,6 @@ RESOURCES_CONTENT=$(wildcard $(RESOURCES)/*)
 RESOURCES_CONTENT+=$(wildcard $(RESOURCES)/.*)
 # ...but not link to current and parent folder
 RESOURCES_CONTENT:=$(filter-out $(RESOURCES)/. $(RESOURCES)/.., $(RESOURCES_CONTENT))
-
-# if we have resources to copy, we need to set bundle to all targets with resources
-# WARNING: in case resources come and go we might have duplicated those targets
-ifneq ($(RESOURCES),)
-	USE_VST2_BUNDLE=true
-	USE_CLAP_BUNDLE=true
-endif
-
 
 # --------------------------------------------------------------
 # tune for WASM
