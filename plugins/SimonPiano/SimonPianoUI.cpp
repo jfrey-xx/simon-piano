@@ -482,8 +482,9 @@ private:
     if (!isKeyWhite(rootKey + nbKeys - 1)) {
       uiNbWhiteKeys += 0.5;
     }
-    // around keyboard, between keys -- would be same ratio for 12 notes
-    Vector2 margins = {size.x * 0.02f, 0.0f};
+    // around keyboard, between keys
+    // keep ratio of sprite
+    Vector2 margins = {size.y * 0.25f, 0.0f};
     // black keys over whites, width of a key will be conditioned by the former
     Vector2 keySize;
     keySize.x = (size.x  - margins.x * 2) / uiNbWhiteKeys;
