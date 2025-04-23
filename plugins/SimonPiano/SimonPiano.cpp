@@ -568,13 +568,23 @@ protected:
   }
 
   // deal with feedback incorrect, terminate round once done
+  // note: send to last used channel
   void feedbackIncorrect(bool raise, uint32_t frame=0) {
     // start incorrect feedback
     if (raise) {
       status = FEEDBACK_INCORRECT;
+      // init counter
+      lastTime = curTime;
+      // bad chord for bad feedback
+      sendNoteOn(45, 127, curChannel, frame);
+      sendNoteOn(46, 127, curChannel, frame);
+      sendNoteOn(47, 127, curChannel, frame);
     }
     // time to end it
     else {
+      sendNoteOff(curNote, curChannel, frame);
+      sendNoteOff(curNote, curChannel, frame);
+      sendNoteOff(curNote, curChannel, frame);
       // this was the last straw
       if (nbMiss > maxMiss) {
         stop();
