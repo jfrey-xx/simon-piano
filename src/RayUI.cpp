@@ -9,7 +9,7 @@ START_NAMESPACE_DISTRHO
 
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
-RayUI::RayUI(uint newFPS)
+ RayUI::RayUI(uint newFPS, TextureFilter filter)
   : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT) 
 {
   fps = newFPS;
@@ -66,7 +66,7 @@ RayUI::RayUI(uint newFPS)
 
   // init rendering texture
   canvas = LoadRenderTexture(canvasWidth, canvasHeight);
-  SetTextureFilter(canvas.texture, TEXTURE_FILTER_BILINEAR);
+  SetTextureFilter(canvas.texture, filter);
 }
 
 RayUI::~RayUI() {

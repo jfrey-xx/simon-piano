@@ -21,8 +21,9 @@ START_NAMESPACE_DISTRHO
 class RayUI : public UI, private IdleCallback
 {
 public:
-  // set desired FPS. 0 to disable animation during idle state
-  RayUI(uint newFPS=UI_DEFAULT_REFRESH_RATE);
+  // newFPS: set desired FPS. 0 to disable animation during idle state
+  // filter: define the TextureFilter used for canvas, e.g. TEXTURE_FILTER_POINT for pixel approximation
+  RayUI(uint newFPS=UI_DEFAULT_REFRESH_RATE, TextureFilter filter=TEXTURE_FILTER_BILINEAR);
   ~RayUI();
 protected:
   // used for constant refresh rate. might override if client do not want that
