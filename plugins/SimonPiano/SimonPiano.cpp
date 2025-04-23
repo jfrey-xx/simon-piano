@@ -611,8 +611,9 @@ protected:
     }
 
     // the game might have ended from user call, check here if we need to abort a note
-    if (status == GAMEOVER) {
+    if (status == STOPPING) {
         abortCurrentNote(frame);
+        status = GAMEOVER;
     }
 
     // update time
@@ -660,7 +661,7 @@ protected:
   // abort current play: set status, update max round
   // note: do not discard current note here since we might be called outside of process()
   void stop() {
-    status = GAMEOVER;
+    status = STOPPING;
     // level up!
     if (round > 0 && round - 1 > maxRound) {
       maxRound = round - 1;

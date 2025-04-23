@@ -529,14 +529,8 @@ private:
 	    sprite = WHITE_KEY_INCORRECT;
 	    break;
 	    // notes outside game or during feedback
-	  case WAITING:
-	  case FEEDBACK_INCORRECT:
-	  case GAMEOVER:
-	    sprite = WHITE_KEY_PLAY;
-	    break;
 	  default:
-	    // debug
-	    sprite = WHITE_KEY_DEBUG;
+	    sprite = WHITE_KEY_PLAY;
 	    break;
 	  }
 	}
@@ -573,15 +567,9 @@ private:
 	  case PLAYING_INCORRECT:
 	    sprite = BLACK_KEY_INCORRECT;
 	    break;
-	    // notes outside game
-	  case WAITING:
-	  case FEEDBACK_INCORRECT:
-	  case GAMEOVER:
-	    sprite = BLACK_KEY_PLAY;
-	    break;
+	    // notes outside game or during feedback
 	  default:
-	    // debug
-	    sprite = BLACK_KEY_DEBUG;
+	    sprite = BLACK_KEY_PLAY;
 	    break;
 	  }
 	}

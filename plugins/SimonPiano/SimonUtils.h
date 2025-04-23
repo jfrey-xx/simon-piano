@@ -16,6 +16,7 @@ enum Status {
                 PLAYING_CORRECT,
                 PLAYING_INCORRECT,
                 FEEDBACK_INCORRECT, // after an error we give feedback
+                STOPPING, // user requested abort or conditions reached for end
                 GAMEOVER,
 
                 STATUS_COUNT
