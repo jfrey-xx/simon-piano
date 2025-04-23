@@ -61,7 +61,7 @@ public:
       The UI should be initialized to a default state that matches the plugin side.
     */
 
-  SimonPianoUI() : RayUI(UI_REFRESH_RATE)
+  SimonPianoUI() : RayUI(UI_REFRESH_RATE, TEXTURE_FILTER_POINT)
     {
       String resourcesLocation = getResourcesLocation();
       d_stdout("resources location: %s", resourcesLocation.buffer());
@@ -177,7 +177,7 @@ protected:
     case PLAYING_WAIT:
     case PLAYING_CORRECT:
     case PLAYING_INCORRECT:
-    case PLAYING_OVER:
+    case FEEDBACK_INCORRECT:
       GuiLabel(layoutRecs[0], TextFormat("Round %d - step %d", round, step));
       GuiLabel(layoutRecs[1], TextFormat("Your turn!"));
       break;
@@ -526,11 +526,11 @@ private:
 	    sprite = WHITE_KEY_CORRECT;
 	    break;
 	  case PLAYING_INCORRECT:
-	  case PLAYING_OVER:
 	    sprite = WHITE_KEY_INCORRECT;
 	    break;
-	    // notes outside game
+	    // notes outside game or during feedback
 	  case WAITING:
+	  case FEEDBACK_INCORRECT:
 	  case GAMEOVER:
 	    sprite = WHITE_KEY_PLAY;
 	    break;
@@ -571,11 +571,11 @@ private:
 	    sprite = BLACK_KEY_CORRECT;
 	    break;
 	  case PLAYING_INCORRECT:
-	  case PLAYING_OVER:
 	    sprite = BLACK_KEY_INCORRECT;
 	    break;
 	    // notes outside game
 	  case WAITING:
+	  case FEEDBACK_INCORRECT:
 	  case GAMEOVER:
 	    sprite = BLACK_KEY_PLAY;
 	    break;

@@ -15,7 +15,7 @@ enum Status {
                 PLAYING_WAIT, // waiting for the player
                 PLAYING_CORRECT,
                 PLAYING_INCORRECT,
-                PLAYING_OVER, // lost the round, wait before ending it for good (i.e. for key release)
+                FEEDBACK_INCORRECT, // after an error we give feedback
                 GAMEOVER,
 
                 STATUS_COUNT

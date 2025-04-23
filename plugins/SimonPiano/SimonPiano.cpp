@@ -442,9 +442,6 @@ protected:
       else {
         status = PLAYING_INCORRECT;
         nbMiss++;
-        if (nbMiss > maxMiss) {
-          status = PLAYING_OVER;
-        }
       }
     }      
   }
@@ -454,7 +451,7 @@ protected:
     // shift here is well
     note = shiftNote(note);
 
-    // NOTE: even if note on were filtered with shallNotPass, process everything here, we could well have a note off event after the option was switched o
+    // NOTE: even if note on were filtered with shallNotPass, process everything here, we could well have a note off event after the option was switched on
 
     // do not change status in-between games, just pass-through note off events
     if (!isRunning(status)) {
@@ -466,13 +463,13 @@ protected:
       }
     }
     // while playing check if round is over
-    else if (isPlaying(status) || status == PLAYING_OVER) {
+    else if (isPlaying(status)) {
       sendNoteOff(note, channel, frame);
       // take into account for play only if we turn off current note (we might also release part of a chord)
       if (note == curNote) {
-        // sequence is terminated
-        if (status == PLAYING_OVER) {
-          stop();
+        // user just hit an error, going to feedback mode
+        if (status == PLAYING_INCORRECT) {
+          feedbackIncorrect(true, frame);
         }
         // still in play, either next or new round
         else {
@@ -562,10 +559,29 @@ protected:
     else if (stepN < MAX_ROUND) {
       curNote = sequence[stepN];
       if (curNote >= 0) {
-        // first channel and full velocity by default
+        // last used channel and full velocity by default
         curChannel = 0;
         sendNoteOn(curNote, 127, curChannel, frame);
         stepN++;
+      }
+    }
+  }
+
+  // deal with feedback incorrect, terminate round once done
+  void feedbackIncorrect(bool raise, uint32_t frame=0) {
+    // start incorrect feedback
+    if (raise) {
+      status = FEEDBACK_INCORRECT;
+    }
+    // time to end it
+    else {
+      // this was the last straw
+      if (nbMiss > maxMiss) {
+        stop();
+      }
+      // again player's turn
+      else {
+        status = PLAYING_WAIT;
       }
     }
   }
@@ -628,6 +644,12 @@ protected:
           }
         }
           break;
+      case FEEDBACK_INCORRECT:
+        // currently giving feedback, time to end it
+        if (elapsedTime >= NOTE_INTERVAL) {
+          feedbackIncorrect(false, frame + i);
+        }
+        break;
       default:
         break;
       }
