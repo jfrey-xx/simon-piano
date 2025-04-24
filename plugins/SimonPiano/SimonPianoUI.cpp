@@ -151,7 +151,7 @@ protected:
     ClearBackground(BLUE);
   }
   
-   void onCanvasDisplay()
+  void onCanvasDisplay() override
   {
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
@@ -356,10 +356,8 @@ protected:
 private:
   // texture for piano keys
   Texture2D piano;
-  // location of current key in texture
-  Rectangle keySpriteRec;
   // upper left reference point for UI
-  const Vector2 anchor = { 15, 10 };
+  static constexpr Vector2 anchor = { 15, 10 };
   // layout of the GUI
   const Rectangle layoutRecs[25] = {
     (Rectangle){ anchor.x + 200, anchor.y + 0, 568, 32 },

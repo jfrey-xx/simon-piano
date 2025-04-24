@@ -90,7 +90,7 @@ class Rando {
   /* RAND_MAX assumed to be 32767 */
   int rand(void) {
     next = next * 1103515245 + 12345;
-    return((unsigned)(next/65536) % 32768);
+    return((unsigned)(next/65536) % (RANDO_MAX+1));
   }
 
   // c
@@ -118,15 +118,15 @@ struct Preset {
 
 // note: two consecutive presets should not differ by only the presence of "-1", otherwise with current code it will not cycle
 const Preset presets[NB_PRESETS] = {
-  {"One Octave", 60, 12, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {"D major",    60, 12, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1},
+  {"One Octave", 60, 12, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"D major",    60, 12, {1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1}},
   // aka All-Blacks
-  {"F# Maj pentatonic", 60, 12, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0},
-  {"25 keys", 60-12, 25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {"49 keys", 60-24, 49, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {"61 keys", 60-24, 61, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {"88 keys", 60-39, 88, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {"Custom", -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+  {"F# Maj pentatonic", 60, 12, {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0}},
+  {"25 keys", 60-12, 25, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"49 keys", 60-24, 49, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"61 keys", 60-24, 61, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"88 keys", 60-39, 88, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"Custom", -1, -1, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
 };
 
 // return -1 if the preset cannot be found

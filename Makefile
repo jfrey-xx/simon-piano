@@ -5,8 +5,23 @@
 #
 
 # select opengl version, go for max compatibility, make it visible for all spawned make (especially dgl)
+
+# HOTFIX: need to know about MAC now to set proper opengl version
+ifneq ($(MACOS),true)
+TARGET_MACHINE := $(shell $(CC) -dumpmachine)
+ifneq (,$(findstring apple,$(TARGET_MACHINE)))
+MACOS = true
+endif
+endif # MACOS
+
+# at the moment special treatment for macos
+ifeq ($(MACOS),true)
+USE_OPENGL3=true
+export USE_OPENGL3
+else
 USE_GLES2=true
 export USE_GLES2
+endif
 
 include dpf/Makefile.base.mk
 

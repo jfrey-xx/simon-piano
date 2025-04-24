@@ -409,7 +409,7 @@ protected:
   }
 
   // user playing notes, shifting note to interval of interest.  keep channel and velocity for user during pass-through
-  void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
+  void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) override {
     // Tries to be as smart as possible, if the input note is out of range consider that the position is just shifted (user might not have the correct octave configured)
     note = shiftNote(note); 
 
@@ -447,7 +447,7 @@ protected:
   }
 
   // will detect new round upon note off of last playing
-  void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
+  void noteOff(uint8_t note, uint8_t channel, uint32_t frame) override {
     // shift here is well
     note = shiftNote(note);
 
@@ -596,7 +596,7 @@ protected:
     }
   }
 
-  void process(uint32_t nbSamples, uint32_t frame) {
+  void process(uint32_t nbSamples, uint32_t frame) override {
     // in-between games, sync state
     // Note: upon change on root or nbNotes we will kill any pending notes, to avoid stuck keys upon shifting
     if (!isRunning(status)) {
