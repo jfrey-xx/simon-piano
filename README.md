@@ -9,6 +9,8 @@ Only note on/off messages are passed through.
 
 # Dev
 
+Tested on Linux x64 (Ubuntu 24.04) with GLES2 and GL33, MacOS intel (10.15) with GLES2 and GL33 (if you wish to switch to GL33, sync flags for DPF in the main `Makefile` and for raylib in `src/Makefile.rayui.mk`).
+
 ## web export
 
 - install emsdk (tested with 4.0.6 running on Ubuntu 24.04)

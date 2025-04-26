@@ -14,7 +14,7 @@ MACOS = true
 endif
 endif # MACOS
 
-# at the moment special treatment for macos
+# USE_GLES3 and USE_OPENGL3 tested working on macos and linux
 USE_GLES2=true
 export USE_GLES2
 
