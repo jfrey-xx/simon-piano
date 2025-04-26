@@ -101,10 +101,14 @@ endif
 # TODO: do not run again if already performed
 # WARNING with jack: in case there are several plugins with jack and resources with the same name, one will take precedence
 # FIXME: if resources are deleted or renamed between two runs, links will be broken. clean between.
+# HOTFIX: remove empty Resources folder set by DPF for MACOS, otherwise our resources will be a subfolder
 resources: $(TARGETS) $(RESOURCES)
 ifneq ($(RESOURCES),)
 ifeq ($(findstring jack,$(TARGETS)),jack)
 	@echo "copy resources to jack"
+ifeq ($(MACOS),true)
+	rm -f $(JACK_RESOURCES_DIR)/empty.lproj
+endif
 # note: -n to avoid recursively upon re-rerunning
 	install -d $(JACK_RESOURCES_DIR)
 ifneq ($(RESOURCES_CONTENT),)
@@ -113,6 +117,10 @@ endif
 endif
 ifeq ($(findstring clap,$(TARGETS)),clap)
 	@echo "copy resources to clap"
+ifeq ($(MACOS),true)
+	rm -f $(CLAP_RESOURCES_DIR)/empty.lproj
+	rmdir $(CLAP_RESOURCES_DIR) || true
+endif
 	ln -snf $(RESOURCES) $(CLAP_RESOURCES_DIR)
 endif
 ifeq ($(findstring lv2,$(TARGETS)),lv2)
@@ -121,10 +129,18 @@ ifeq ($(findstring lv2,$(TARGETS)),lv2)
 endif
 ifeq ($(findstring vst3,$(TARGETS)),vst3)
 	@echo "copy resources to vst3"
+ifeq ($(MACOS),true)
+	rm -f $(VST3_RESOURCES_DIR)/empty.lproj
+	rmdir $(VST3_RESOURCES_DIR) || true
+endif
 	ln -snf $(RESOURCES) $(VST3_RESOURCES_DIR)
 endif
 ifeq ($(findstring vst2,$(TARGETS)),vst2)
 	@echo "copy resources to vst2"
+ifeq ($(MACOS),true)
+	rm -f $(VST2_RESOURCES_DIR)/empty.lproj
+	rmdir $(VST2_RESOURCES_DIR) || true
+endif
 	ln -snf $(RESOURCES) $(VST2_RESOURCES_DIR)
 endif
 endif
