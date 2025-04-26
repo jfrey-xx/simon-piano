@@ -15,13 +15,8 @@ endif
 endif # MACOS
 
 # at the moment special treatment for macos
-ifeq ($(MACOS),true)
-USE_OPENGL3=true
-export USE_OPENGL3
-else
 USE_GLES2=true
 export USE_GLES2
-endif
 
 include dpf/Makefile.base.mk
 
