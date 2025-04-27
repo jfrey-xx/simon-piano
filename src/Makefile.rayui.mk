@@ -67,6 +67,12 @@ LINK_FLAGS += -sUSE_GLFW=3
 # custom template for the final web page
 LINK_FLAGS += --shell-file=./emscripten/shell.html
 endif
+# raylib requires some libraries not always inluded by DPF on mingw
+ifeq ($(WINDOWS),true)
+LINK_FLAGS += -lpthread # clock_gettime
+LINK_FLAGS += -lwinmm # __imp_timeBeginPeriod
+endif
+
 
 # override target
 ifeq ($(WASM),true)
