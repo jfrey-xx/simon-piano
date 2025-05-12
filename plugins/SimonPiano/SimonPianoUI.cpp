@@ -68,11 +68,39 @@ public:
 
       // load texture for piano keys
       piano = LoadTexture(resourcesLocation + "piano.png");
+
+      // Define the camera to look into our 3d world
+      camera.position = (Vector3){ 6.0f, 6.0f, 6.0f };    // Camera position
+      camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };      // Camera looking at point
+      camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+      camera.fovy = 45.0f;                                // Camera field-of-view Y
+      camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+
+      // load model and animation
+      model = LoadModel(resourcesLocation + "test.gltf");
+      d_stdout("model loaded. material count: %d, mesh count: %d", model.materialCount, model.meshCount);
+      modelAnimations = LoadModelAnimations(resourcesLocation + "test.gltf", &animsCount);
+      d_stdout("anim loaded, count %d", animsCount);
+
+
+      // init texture used to draw piano
+      // TODO: standard texture size, might adjust?
+      canvasPiano = LoadRenderTexture(512, 512);
+
+      // first unload texture that will not be used
+      // FIXME: control for material ID
+      rlUnloadTexture(model.materials[2].maps[MATERIAL_MAP_DIFFUSE].texture.id);
+      // replace model texture with this one
+      SetMaterialTexture(&(model.materials[2]), MATERIAL_MAP_DIFFUSE, canvasPiano.texture);
     }
 
   ~SimonPianoUI() {
     // Texture unloading
     UnloadTexture(piano);
+    UnloadRenderTexture(canvasPiano);
+    // unload model (including meshes) and animations
+    UnloadModelAnimations(modelAnimations, animsCount);
+    UnloadModel(model);
   }
 
 protected:
@@ -149,6 +177,44 @@ protected:
   void onMainDisplay() override
   {
     ClearBackground(BLUE);
+  }
+
+  void onMainDisplayLast() override
+  {
+
+
+    BeginTextureMode(canvasPiano);
+    drawPiano({0, 0}, {(float)canvasPiano.texture.width, (float)canvasPiano.texture.height}, root, nbNotes);
+    EndTextureMode();
+
+
+
+        // Update
+        //----------------------------------------------------------------------------------
+        UpdateCamera(&camera, CAMERA_ORBITAL);
+
+        // Select current animation
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) animIndex = (animIndex + 1)%animsCount;
+        else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) animIndex = (animIndex + animsCount - 1)%animsCount;
+
+        // Update model animation
+        ModelAnimation anim = modelAnimations[animIndex];
+        animCurrentFrame = (animCurrentFrame + 1)%anim.frameCount;
+        UpdateModelAnimation(model, anim, animCurrentFrame);
+        //----------------------------------------------------------------------------------
+
+        // Draw
+        //----------------------------------------------------------------------------------
+
+
+	BeginMode3D(camera);
+	DrawModel(model, position, 0.1f, WHITE);    // Draw animated model
+	DrawGrid(10, 1.0f);
+	EndMode3D();
+
+	DrawText("Use the LEFT/RIGHT mouse buttons to switch animation", 10, 10, 20, GRAY);
+	DrawText(TextFormat("Animation: %s", anim.name), 10, GetScreenHeight() - 20, 10, DARKGRAY);
+
   }
   
   void onCanvasDisplay() override
@@ -386,6 +452,21 @@ private:
     (Rectangle){ anchor.x + 200, anchor.y + 464, 568, 32 },
     (Rectangle){ anchor.x + 200, anchor.y + 504, 568, 32 },
   };
+
+  // used for 3D rendering
+  Camera camera = {0};
+  // model and its position
+  Model model;
+  Vector3 position = { 0.0f, 0.0f, 0.0f };
+  // Load gltf model animations
+  int animsCount = -1;
+  unsigned int animIndex = 0;
+  unsigned int animCurrentFrame = 0;
+  ModelAnimation *modelAnimations;
+  // render texture to mesh
+  RenderTexture2D canvasPiano;
+
+
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;
