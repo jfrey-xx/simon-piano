@@ -1,6 +1,8 @@
 
 // how often no refresh on idle state, in Hz. 0 to disable animation during idle state
 #define UI_REFRESH_RATE 30
+// how many frames per seconds for animations
+#define ANIM_FRAME_RATE 30
 
 #include "RayUI.hpp"
 #include "SimonUtils.h"
@@ -187,7 +189,6 @@ protected:
   {
     ClearBackground(BLUE);
 
-
     // render piano to texture -- on main display rather than canvas because cannot nest texture rendering
     BeginTextureMode(texturePiano);
     // note: since rendered to another canvas afterward no need to flip
@@ -195,26 +196,39 @@ protected:
     EndTextureMode();
 
     // Select current animation
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-      animIndex++;
-      // no animation
-      if (animIndex >= animsCount) {
-	animIndex = -1;
+    if (animsCount > 0) {
+      if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+	animIndex++;
+	// reset animation
+	animCurrentTime = 0;
+	// no animation
+	if (animIndex >= animsCount) {
+	  animIndex = -1;
+	  // first frame of first animation for still
+	  UpdateModelAnimation(model, modelAnimations[0], 0);
+	}
+	else {
+	  animDuration = modelAnimations[animIndex].frameCount / (float) ANIM_FRAME_RATE;
+	  // set to first frame
+	  UpdateModelAnimation(model, modelAnimations[animIndex], 0);
+	}
       }
-    }
-
-    // Update model animation
-    ModelAnimation anim;
-    if (animIndex >= 0) {
-      // TODO: sync with actual time
-      anim = modelAnimations[animIndex];
-      animCurrentFrame = (animCurrentFrame + 1)%anim.frameCount;
-      UpdateModelAnimation(model, anim, animCurrentFrame);
-    }
-    else {
-      // first frame of first animation for still
-      anim = modelAnimations[0];
-      UpdateModelAnimation(model, anim, 0);
+      // since animation is already set to first frame, start on next framees
+      else {
+	// Update model animation, if any
+	if (animIndex >= 0) {
+	  ModelAnimation anim = modelAnimations[animIndex];
+	  if (anim.frameCount > 0 && animDuration > 0 && animCurrentTime < animDuration) {
+	    animCurrentTime += GetFrameTime();
+	    int animCurrentFrame =  anim.frameCount * animCurrentTime / animDuration;
+	    // play animation once
+	    if (animCurrentFrame >= anim.frameCount) {
+	      animCurrentFrame = anim.frameCount - 1;
+	    }
+	    UpdateModelAnimation(model, anim, animCurrentFrame);
+	  }
+	}
+      }
     }
 
     // draw piano mesh to virtual scene
@@ -227,20 +241,6 @@ protected:
     EndMode3D();
 
     EndTextureMode();
-  }
-
-  void onMainDisplayLast() override
-  {
-
-    
-
-
-
-
-    //----------------------------------------------------------------------------------
-    
-
-
   }
   
   void onCanvasDisplay() override
@@ -497,10 +497,14 @@ private:
   Vector3 position = { 0.0f, 0.0f, 0.0f };
   // Load gltf model animations
   int animsCount = -1;
-  // < 0: disable animation
-  int animIndex = -1;
-  unsigned int animCurrentFrame = 0;
+  // array of animations contained in the model
   ModelAnimation *modelAnimations;
+  // selected animation, < 0: disable animation
+  int animIndex = -1;
+  // duration in seconds for current anim
+  float animDuration = 0;
+  // how long in current anim we are
+  float animCurrentTime = 0;
   // render texture to mesh
   RenderTexture2D texturePiano;
   // render 3D scene to canvas
