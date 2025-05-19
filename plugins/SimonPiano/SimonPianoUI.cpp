@@ -77,21 +77,22 @@ public:
       camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 
       // load model and animation
-      model = LoadModel(resourcesLocation + "test.gltf");
+      model = LoadModel(resourcesLocation + "piano.gltf");
       d_stdout("model loaded. material count: %d, mesh count: %d", model.materialCount, model.meshCount);
-      modelAnimations = LoadModelAnimations(resourcesLocation + "test.gltf", &animsCount);
+      modelAnimations = LoadModelAnimations(resourcesLocation + "piano.gltf", &animsCount);
       d_stdout("anim loaded, count %d", animsCount);
 
 
-      // init texture used to draw piano
-      // TODO: standard texture size, might adjust?
-      canvasPiano = LoadRenderTexture(512, 512);
+      // init texture used to draw piano, as a hack for he margins ratio that matches the mesh
+      canvasPiano = LoadRenderTexture(512, 128);
 
-      // first unload texture that will not be used
-      // FIXME: control for material ID
-      rlUnloadTexture(model.materials[2].maps[MATERIAL_MAP_DIFFUSE].texture.id);
-      // replace model texture with this one
-      SetMaterialTexture(&(model.materials[2]), MATERIAL_MAP_DIFFUSE, canvasPiano.texture);
+      // last texture should be the one we target for the surface of the piano
+      if (model.materialCount > 0) {
+	// first unload texture that will not be used
+	rlUnloadTexture(model.materials[model.materialCount-1].maps[MATERIAL_MAP_DIFFUSE].texture.id);
+	// replace model texture with this one
+	SetMaterialTexture(&(model.materials[model.materialCount-1]), MATERIAL_MAP_DIFFUSE, canvasPiano.texture);
+      }
     }
 
   ~SimonPianoUI() {
@@ -208,7 +209,8 @@ protected:
 
 
 	BeginMode3D(camera);
-	DrawModel(model, position, 0.1f, WHITE);    // Draw animated model
+	// Draw animated model, no tint
+	DrawModel(model, position, 1.0f, WHITE);
 	DrawGrid(10, 1.0f);
 	EndMode3D();
 
