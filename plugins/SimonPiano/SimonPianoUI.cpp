@@ -85,6 +85,8 @@ public:
       // load model and animation
       model = LoadModel(resourcesLocation + "piano.gltf");
       d_stdout("model loaded. material count: %d, mesh count: %d", model.materialCount, model.meshCount);
+      // expect first animation key press, second wrong key
+	// TODO: detect anim mapping depending on name?
       modelAnimations = LoadModelAnimations(resourcesLocation + "piano.gltf", &animsCount);
       d_stdout("anim loaded, count %d", animsCount);
 
@@ -197,26 +199,34 @@ protected:
 
     // Select current animation
     if (animsCount > 0) {
-      if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-	animIndex++;
-	// reset animation
+      bool  newAnim = false;
+      // we are playing a new note, anim key press
+      if (animNote != curNote && curNote >= 0) {
+	animIndex = 0;
+	newAnim = true;
+      }
+      // anim wrong upon said feedback
+      else if (animStatus != status && status == FEEDBACK_INCORRECT) {
+	animIndex = 1;
+	newAnim = true;
+      }
+      // nothing new to animate, just stay still
+      else if (curNote < 0 && status != FEEDBACK_INCORRECT && animIndex >= 0 && animCurrentTime >= animDuration) {
+	animIndex = -1;
+	// first frame of first animation for still
+	UpdateModelAnimation(model, modelAnimations[0], 0);
+      }
+      // we have an animation to (re)set
+      if (newAnim && animIndex >= 0 && animIndex < animsCount) {
 	animCurrentTime = 0;
-	// no animation
-	if (animIndex >= animsCount) {
-	  animIndex = -1;
-	  // first frame of first animation for still
-	  UpdateModelAnimation(model, modelAnimations[0], 0);
-	}
-	else {
-	  animDuration = modelAnimations[animIndex].frameCount / (float) ANIM_FRAME_RATE;
-	  // set to first frame
-	  UpdateModelAnimation(model, modelAnimations[animIndex], 0);
-	}
+	animDuration = modelAnimations[animIndex].frameCount / (float) ANIM_FRAME_RATE;
+	// set to first frame
+	UpdateModelAnimation(model, modelAnimations[animIndex], 0);
       }
       // since animation is already set to first frame, start on next framees
       else {
 	// Update model animation, if any
-	if (animIndex >= 0) {
+	if (animIndex >= 0 && animIndex < animsCount) {
 	  ModelAnimation anim = modelAnimations[animIndex];
 	  if (anim.frameCount > 0 && animDuration > 0 && animCurrentTime < animDuration) {
 	    animCurrentTime += GetFrameTime();
@@ -229,6 +239,10 @@ protected:
 	  }
 	}
       }
+
+      animNote = curNote;
+      animStatus = status;
+      newAnim = false;
     }
 
     // draw piano mesh to virtual scene
@@ -500,6 +514,9 @@ private:
   float animDuration = 0;
   // how long in current anim we are
   float animCurrentTime = 0;
+  // status for animation
+  int animNote = params[kCurNote].def;
+  int animStatus = params[kStatus].def;
   // render texture to mesh
   RenderTexture2D texturePiano;
   // render 3D scene to canvas
