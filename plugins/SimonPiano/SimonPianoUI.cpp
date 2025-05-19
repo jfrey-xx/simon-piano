@@ -69,10 +69,12 @@ public:
       // load texture for piano keys
       piano = LoadTexture(resourcesLocation + "piano.png");
 
-      // Define the camera to look into our 3d world
-      camera.position = (Vector3){ 6.0f, 6.0f, 6.0f };    // Camera position
-      camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };      // Camera looking at point
-      camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+      // camera above origin
+      camera.position = (Vector3){ 0.0, 8.0, 0.0 };
+      // toward origin
+      camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+      // camera pointing down
+      camera.up = (Vector3){ 0.0, 0.0, -1.0};
       camera.fovy = 45.0f;                                // Camera field-of-view Y
       camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 
@@ -191,7 +193,6 @@ protected:
 
         // Update
         //----------------------------------------------------------------------------------
-        UpdateCamera(&camera, CAMERA_ORBITAL);
 
         // Select current animation
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) animIndex = (animIndex + 1)%animsCount;
@@ -206,9 +207,8 @@ protected:
         // Draw
         //----------------------------------------------------------------------------------
 
-
 	BeginMode3D(camera);
-	// Draw animated model, no tint
+	// Draw animated model, original scale, no tint
 	DrawModel(model, position, 1.0f, WHITE);
 	DrawGrid(10, 1.0f);
 	EndMode3D();
