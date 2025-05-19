@@ -185,9 +185,8 @@ protected:
 
 
     BeginTextureMode(canvasPiano);
-    drawPiano({0, 0}, {(float)canvasPiano.texture.width, (float)canvasPiano.texture.height}, root, nbNotes);
+    drawPiano({0, 0}, {(float)canvasPiano.texture.width, (float)canvasPiano.texture.height}, root, nbNotes, true);
     EndTextureMode();
-
 
 
         // Update
@@ -484,8 +483,9 @@ private:
   bool shallNotPass = params[kShallNotPass].def;
 
   // extract and draw sprite id a said location and size
-  // also background, hacking slitghly
-  void drawKey(KeyIdx idx, Vector2 pos, Vector2 size) {
+  // also background, hacking slightly
+  // flip: Y flip for sprite
+  void drawKey(KeyIdx idx, Vector2 pos, Vector2 size, bool flip = false) {
     // fixed size for all keys in the sprite sheet
     static const Rectangle spriteSize = {0, 0, 16, 64};
     // picking the right position
@@ -545,14 +545,20 @@ private:
       break;
     }
     
+    // flip sprite if set
+    float spriteHeight = spriteSize.height;
+    if (flip) {
+      spriteHeight *= -1;
+    }
     // no rotation, no tint
-    DrawTexturePro(piano, {spriteSize.x + spriteShift * spriteSize.width, spriteSize.y, spriteSize.width, spriteSize.height}, {pos.x, pos.y, size.x, size.y}, {0.0, 0.0}, 0, WHITE); 
+    DrawTexturePro(piano, {spriteSize.x + spriteShift * spriteSize.width, spriteSize.y, spriteSize.width, spriteHeight}, {pos.x, pos.y, size.x, size.y}, {0.0, 0.0}, 0, WHITE);
   }
 
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
   // size: size of the widget
-  void drawPiano(Vector2 pos, Vector2 size, uint rootKey, uint nbKeys) {
+  // flip: will flip sprites in Y-axis, e.g. used for textures and different origin for OpenGL
+  void drawPiano(Vector2 pos, Vector2 size, uint rootKey, uint nbKeys, bool flip = false) {
     // find number of white keys
     int nbWhiteKeys = getNbWhiteKeys(rootKey, nbKeys);
     // in case we start or end with black, leave some padding as half a white
@@ -572,10 +578,10 @@ private:
     keySize.y = size.y - margins.y * 2;
 
     // draw the background, sides
-    drawKey(BACKGROUND_LEFT, {pos.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y});   
-    drawKey(BACKGROUND_RIGHT, {pos.x + size. x -margins.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y});   
+    drawKey(BACKGROUND_LEFT, {pos.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y}, flip);
+    drawKey(BACKGROUND_RIGHT, {pos.x + size. x -margins.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y}, flip);
     // background
-    drawKey(BACKGROUND_FELT, {pos.x + margins.x, pos.y + margins.y}, {size.x - 2 * margins.x, size.y - 2*margins.y});   
+    drawKey(BACKGROUND_FELT, {pos.x + margins.x, pos.y + margins.y}, {size.x - 2 * margins.x, size.y - 2*margins.y}, flip);
 
     // base position for current key
     Vector2 startPos = {pos.x + margins.x, pos.y + margins.y};
@@ -615,7 +621,7 @@ private:
 	    break;
 	  }
 	}
-	drawKey(sprite, curPos, keySize);
+	drawKey(sprite, curPos, keySize, flip);
 	curPos.x += keySize.x;
       }
       note++;
@@ -655,7 +661,7 @@ private:
 	  }
 	}
 	// for black key, shift half to right to center between two white keys
-	drawKey(sprite, {curPos.x - keySize.x / 2, curPos.y}, keySize);
+	drawKey(sprite, {curPos.x - keySize.x / 2, curPos.y}, keySize, flip);
       }
       note++;
     }
