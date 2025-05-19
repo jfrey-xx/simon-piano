@@ -435,18 +435,13 @@ protected:
       setParameterValue(kRoundsForMiss, (int)uiRoundsForMiss);
     }
 
-
-
-
+    // render the 3D scene
     DrawTexturePro(
 		   canvasPiano.texture,
 		   // flip Y so we get the right texture
 		   (Rectangle){ 0.0f, 0.0f , (float)canvasPiano.texture.width, -(float)canvasPiano.texture.height },
 		   (Rectangle){layoutRecs[22].x, layoutRecs[22].y, layoutRecs[22].width, layoutRecs[22].height },
 		   (Vector2){ 0, 0 }, 0.0f, WHITE);
-    
-    
-    drawPiano({layoutRecs[22].x, layoutRecs[22].y-200}, {layoutRecs[22].width, layoutRecs[22].height}, root, nbNotes);
 
     GuiLabel(layoutRecs[23], TextFormat("Missed %d/%d", nbMiss, maxMiss));
     GuiLabel(layoutRecs[24], TextFormat("Current best: %d", maxRound));
