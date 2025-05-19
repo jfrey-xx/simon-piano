@@ -69,14 +69,16 @@ public:
       // load texture for piano keys
       piano = LoadTexture(resourcesLocation + "piano.png");
 
-      // camera above origin
-      camera.position = (Vector3){ 0.0, 8.0, 0.0 };
+      // camera above origin, high enough to fit model with fov and have full model in view
+      camera.position = (Vector3){ 0.0, 5.1, 0.0 };
       // toward origin
       camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
       // camera pointing down
       camera.up = (Vector3){ 0.0, 0.0, -1.0};
-      camera.fovy = 45.0f;                                // Camera field-of-view Y
-      camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+      // field-of-view Y, we want to avoid deformations too extreme with perspective
+      camera.fovy = 90.0f/8;
+      // camera projection type
+      camera.projection = CAMERA_PERSPECTIVE;
 
       // load model and animation
       model = LoadModel(resourcesLocation + "piano.gltf");
@@ -84,23 +86,27 @@ public:
       modelAnimations = LoadModelAnimations(resourcesLocation + "piano.gltf", &animsCount);
       d_stdout("anim loaded, count %d", animsCount);
 
-
-      // init texture used to draw piano, as a hack for he margins ratio that matches the mesh
-      canvasPiano = LoadRenderTexture(512, 128);
+      // init texture used to draw piano, wide as a hack to tune margins ratio on the shape on-screen
+      texturePiano = LoadRenderTexture(1024, 128);
+      // for 3D scene, mesh is supposed to be a square, will help with filtering on Y during key press animation and subsequent rotation
+      canvasPiano = LoadRenderTexture(1024, 1024);
+      // to deal with lots of keys we enable filtering for both
+      SetTextureFilter(texturePiano.texture, TEXTURE_FILTER_BILINEAR);
+      SetTextureFilter(canvasPiano.texture, TEXTURE_FILTER_BILINEAR);
 
       // last texture should be the one we target for the surface of the piano
       if (model.materialCount > 0) {
 	// first unload texture that will not be used
 	rlUnloadTexture(model.materials[model.materialCount-1].maps[MATERIAL_MAP_DIFFUSE].texture.id);
 	// replace model texture with this one
-	SetMaterialTexture(&(model.materials[model.materialCount-1]), MATERIAL_MAP_DIFFUSE, canvasPiano.texture);
+	SetMaterialTexture(&(model.materials[model.materialCount-1]), MATERIAL_MAP_DIFFUSE, texturePiano.texture);
       }
     }
 
   ~SimonPianoUI() {
     // Texture unloading
     UnloadTexture(piano);
-    UnloadRenderTexture(canvasPiano);
+    UnloadRenderTexture(texturePiano);
     // unload model (including meshes) and animations
     UnloadModelAnimations(modelAnimations, animsCount);
     UnloadModel(model);
@@ -180,41 +186,60 @@ protected:
   void onMainDisplay() override
   {
     ClearBackground(BLUE);
+
+
+    // render piano to texture -- on main display rather than canvas because cannot nest texture rendering
+    BeginTextureMode(texturePiano);
+    // note: since rendered to another canvas afterward no need to flip
+    drawPiano({0, 0}, {(float)texturePiano.texture.width, (float)texturePiano.texture.height}, root, nbNotes, true);
+    EndTextureMode();
+
+    // Select current animation
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+      animIndex++;
+      // no animation
+      if (animIndex >= animsCount) {
+	animIndex = -1;
+      }
+    }
+
+    // Update model animation
+    ModelAnimation anim;
+    if (animIndex >= 0) {
+      // TODO: sync with actual time
+      anim = modelAnimations[animIndex];
+      animCurrentFrame = (animCurrentFrame + 1)%anim.frameCount;
+      UpdateModelAnimation(model, anim, animCurrentFrame);
+    }
+    else {
+      // first frame of first animation for still
+      anim = modelAnimations[0];
+      UpdateModelAnimation(model, anim, 0);
+    }
+
+    // draw piano mesh to virtual scene
+    BeginTextureMode(canvasPiano);
+    // we have to clear background for anything to display
+    ClearBackground(Color({0,0,0,0}));
+    BeginMode3D(camera);
+    // Draw animated model, original scale, no tint
+    DrawModel(model, position, 1.0f, WHITE);
+    EndMode3D();
+
+    EndTextureMode();
   }
 
   void onMainDisplayLast() override
   {
 
-
-    BeginTextureMode(canvasPiano);
-    drawPiano({0, 0}, {(float)canvasPiano.texture.width, (float)canvasPiano.texture.height}, root, nbNotes, true);
-    EndTextureMode();
+    
 
 
-        // Update
-        //----------------------------------------------------------------------------------
 
-        // Select current animation
-        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) animIndex = (animIndex + 1)%animsCount;
-        else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) animIndex = (animIndex + animsCount - 1)%animsCount;
 
-        // Update model animation
-        ModelAnimation anim = modelAnimations[animIndex];
-        animCurrentFrame = (animCurrentFrame + 1)%anim.frameCount;
-        UpdateModelAnimation(model, anim, animCurrentFrame);
-        //----------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------
+    
 
-        // Draw
-        //----------------------------------------------------------------------------------
-
-	BeginMode3D(camera);
-	// Draw animated model, original scale, no tint
-	DrawModel(model, position, 1.0f, WHITE);
-	DrawGrid(10, 1.0f);
-	EndMode3D();
-
-	DrawText("Use the LEFT/RIGHT mouse buttons to switch animation", 10, 10, 20, GRAY);
-	DrawText(TextFormat("Animation: %s", anim.name), 10, GetScreenHeight() - 20, 10, DARKGRAY);
 
   }
   
@@ -410,7 +435,18 @@ protected:
       setParameterValue(kRoundsForMiss, (int)uiRoundsForMiss);
     }
 
-    drawPiano({layoutRecs[22].x, layoutRecs[22].y}, {layoutRecs[22].width, layoutRecs[22].height}, root, nbNotes);
+
+
+
+    DrawTexturePro(
+		   canvasPiano.texture,
+		   // flip Y so we get the right texture
+		   (Rectangle){ 0.0f, 0.0f , (float)canvasPiano.texture.width, -(float)canvasPiano.texture.height },
+		   (Rectangle){layoutRecs[22].x, layoutRecs[22].y, layoutRecs[22].width, layoutRecs[22].height },
+		   (Vector2){ 0, 0 }, 0.0f, WHITE);
+    
+    
+    drawPiano({layoutRecs[22].x, layoutRecs[22].y-200}, {layoutRecs[22].width, layoutRecs[22].height}, root, nbNotes);
 
     GuiLabel(layoutRecs[23], TextFormat("Missed %d/%d", nbMiss, maxMiss));
     GuiLabel(layoutRecs[24], TextFormat("Current best: %d", maxRound));
@@ -455,16 +491,19 @@ private:
   };
 
   // used for 3D rendering
-  Camera camera = {0};
+  Camera camera;
   // model and its position
   Model model;
   Vector3 position = { 0.0f, 0.0f, 0.0f };
   // Load gltf model animations
   int animsCount = -1;
-  unsigned int animIndex = 0;
+  // < 0: disable animation
+  int animIndex = -1;
   unsigned int animCurrentFrame = 0;
   ModelAnimation *modelAnimations;
   // render texture to mesh
+  RenderTexture2D texturePiano;
+  // render 3D scene to canvas
   RenderTexture2D canvasPiano;
 
 
@@ -570,7 +609,7 @@ private:
       uiNbWhiteKeys += 0.5;
     }
     // around keyboard, between keys
-    // keep ratio of sprite
+    // keep ratio of sprite -- FIXME: actually depends on the actual displayed ratio
     Vector2 margins = {size.y * 0.25f, 0.0f};
     // black keys over whites, width of a key will be conditioned by the former
     Vector2 keySize;
