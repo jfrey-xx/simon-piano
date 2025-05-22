@@ -206,12 +206,17 @@ protected:
 	newAnim = true;
       }
       // anim wrong upon said feedback
-      else if (animStatus != status && status == FEEDBACK_INCORRECT) {
+      else if (animsCount > 1 && animStatus != status && status == FEEDBACK_INCORRECT) {
 	animIndex = 1;
 	newAnim = true;
       }
+      // anim lost upon said feedback
+      else if (animsCount > 2 && animStatus != status && status == FEEDBACK_LOST) {
+	animIndex = 2;
+	newAnim = true;
+      }
       // nothing new to animate, just stay still
-      else if (curNote < 0 && status != FEEDBACK_INCORRECT && animIndex >= 0 && animCurrentTime >= animDuration) {
+      else if (curNote < 0 && status != FEEDBACK_INCORRECT && status != FEEDBACK_LOST && animIndex >= 0 && animCurrentTime >= animDuration) {
 	animIndex = -1;
 	// first frame of first animation for still
 	UpdateModelAnimation(model, modelAnimations[0], 0);
