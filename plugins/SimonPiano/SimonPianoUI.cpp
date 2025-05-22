@@ -2,7 +2,7 @@
 // how often no refresh on idle state, in Hz. 0 to disable animation during idle state
 #define UI_REFRESH_RATE 30
 // how many frames per seconds for animations
-#define ANIM_FRAME_RATE 30
+#define ANIM_FRAME_RATE 60
 
 #include "RayUI.hpp"
 #include "SimonUtils.h"
