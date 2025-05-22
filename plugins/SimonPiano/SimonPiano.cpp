@@ -11,6 +11,13 @@ START_NAMESPACE_DISTRHO
 // how long each note is held during instruction
 #define NOTE_DURATION 0.5
 
+// state for a feedback
+enum FeedbackStatus {
+  FB_STATUS_START, // start feedback
+  FB_STATUS_RUN, // let feedback handle its state
+  FB_STATUS_STOP // emergency stop
+};
+
 class SimonPiano : public ExtendedPlugin {
 public:
   // Note: do not care with default values since we will sent all parameters upon init
@@ -469,7 +476,7 @@ protected:
       if (note == curNote) {
         // user just hit an error, going to feedback mode
         if (status == PLAYING_INCORRECT) {
-          feedbackIncorrect(true, frame);
+          feedbackIncorrect(FB_STATUS_START, frame);
         }
         // still in play, either next or new round
         else {
@@ -567,11 +574,13 @@ protected:
     }
   }
 
-  // deal with feedback incorrect, terminate round once done
-  // note: send to last used channel
-  void feedbackIncorrect(bool raise, uint32_t frame=0) {
+  // deal with feedback incorrect, check if lost
+  // flag: true to start the feedback, otherwise let it run
+  // note: handles its own state, send notes to last used channel
+  void feedbackIncorrect(FeedbackStatus flag, uint32_t frame=0) {
+    switch (flag) {
     // start incorrect feedback
-    if (raise) {
+    case FB_STATUS_START:
       status = FEEDBACK_INCORRECT;
       // init counter
       lastTime = curTime;
@@ -579,20 +588,77 @@ protected:
       sendNoteOn(45, 127, curChannel, frame);
       sendNoteOn(46, 127, curChannel, frame);
       sendNoteOn(47, 127, curChannel, frame);
+      break;
+    // let it run
+    case FB_STATUS_RUN:
+      // time to end the notes
+      if (curTime - lastTime >= NOTE_INTERVAL) {
+        // turn off ourselves
+        feedbackIncorrect(FB_STATUS_STOP, frame);
+        // this was the last straw
+        if (nbMiss > maxMiss) {
+          feedbackLost(FB_STATUS_START, frame);
+        }
+        // again player's turn
+        else {
+          status = PLAYING_WAIT;
+        }
+      }
+      break;
+      // emergency stop
+    case FB_STATUS_STOP:
+      // check if we are indeed in this feedback before turning off
+      sendNoteOff(45, curChannel, frame);
+      sendNoteOff(46, curChannel, frame);
+      sendNoteOff(47, curChannel, frame);
+      break;
+    default:
+      break;;
     }
-    // time to end it
-    else {
-      sendNoteOff(curNote, curChannel, frame);
-      sendNoteOff(curNote, curChannel, frame);
-      sendNoteOff(curNote, curChannel, frame);
-      // this was the last straw
-      if (nbMiss > maxMiss) {
-        stop();
+  }
+
+  // deal with feedback once game is lost, terminate round once done
+  // raise: true to start the feedback, otherwise let it run
+  // note: handles its own state, send notes to last used channel
+  void feedbackLost(FeedbackStatus flag, uint32_t frame=0) {
+    // the "medoly" we will play upon loss
+    static const int lostNbNotes = 3;
+    static const int lostNotes[lostNbNotes] = {60, 57, 53};
+
+    switch(flag) {
+      // start incorrect feedback
+    case FB_STATUS_START:
+      status = FEEDBACK_LOST;
+      // init counter
+      lastTime = curTime;
+      feedbackCounter = 0;
+      sendNoteOn(lostNotes[feedbackCounter], 127, curChannel, frame);
+      break;
+    case FB_STATUS_RUN:
+      // time to end the notes
+      if (curTime - lastTime >= NOTE_INTERVAL) {
+        // turn off current note
+        feedbackLost(FB_STATUS_STOP, frame);
+        // next in the medoly
+        feedbackCounter++;
+        // finished for good
+        if (feedbackCounter >= lostNbNotes) {
+          stop();
+        }
+        // continue
+        else {
+          lastTime = curTime;
+          sendNoteOn(lostNotes[feedbackCounter], 127, curChannel, frame);
+        }
       }
-      // again player's turn
-      else {
-        status = PLAYING_WAIT;
-      }
+      break;
+    case FB_STATUS_STOP:
+        if (feedbackCounter < lostNbNotes) {
+          sendNoteOff(lostNotes[feedbackCounter], curChannel, frame);
+        }
+      break;
+    default:
+      break;
     }
   }
 
@@ -621,9 +687,22 @@ protected:
     }
 
     // the game might have ended from user call, check here if we need to abort a note
-    if (status == STOPPING) {
-        abortCurrentNote(frame);
-        status = GAMEOVER;
+    if (stopping) {
+      // check for emergency abort of feedback
+      switch(status) {
+      case FEEDBACK_INCORRECT:
+        feedbackIncorrect(FB_STATUS_STOP, frame);
+        break;
+      case FEEDBACK_LOST:
+        feedbackLost(FB_STATUS_STOP, frame);
+        break;
+      default:
+        break;
+      }
+      // abort current note, if any
+      abortCurrentNote(frame);
+      stopping = false;
+      status = GAMEOVER;
     }
 
     // update time
@@ -656,10 +735,11 @@ protected:
         }
           break;
       case FEEDBACK_INCORRECT:
-        // currently giving feedback, time to end it
-        if (elapsedTime >= NOTE_INTERVAL) {
-          feedbackIncorrect(false, frame + i);
-        }
+        // currently giving feedback, let it run
+        feedbackIncorrect(FB_STATUS_RUN, frame + i);
+        break;
+      case FEEDBACK_LOST:
+        feedbackLost(FB_STATUS_RUN, frame + i);
         break;
       default:
         break;
@@ -668,10 +748,10 @@ protected:
 
   };
 
-  // abort current play: set status, update max round
+  // abort current play: raise flag, update max round
   // note: do not discard current note here since we might be called outside of process()
   void stop() {
-    status = STOPPING;
+    stopping = true;
     // level up!
     if (round > 0 && round - 1 > maxRound) {
       maxRound = round - 1;
@@ -690,6 +770,7 @@ protected:
     nbMiss = 0;
     maxMiss = 0;
     lastRFM = 0;
+    stopping = false;
   }
 
 private:
@@ -728,6 +809,10 @@ private:
   Rando ran;
   // last time a miss was granted
   int lastRFM = 0;
+  // user requested abort or conditions reached for end
+  bool stopping = false;
+  // generic counter that can be used by feedback
+  unsigned int feedbackCounter = 0;
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPiano);
 };
