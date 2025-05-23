@@ -57,7 +57,7 @@ clean:
 	$(MAKE) clean -C dpf/dgl
 	$(MAKE) clean -C plugins/SimonPiano
 	$(MAKE) clean -C dpf/utils/lv2-ttl-generator
-	$(MAKE) clean -C src
+	$(MAKE) clean -C dpf-extra
 	rm -rf bin build 
 
 # --------------------------------------------------------------

@@ -29,7 +29,7 @@ TARGETS += clap
 # --------------------------------------------------------------
 # Do some magic -- customized for using raylib UI and copying resources
 
-include ../../src/Makefile.rayui.mk
+include ../../dpf-extra/Makefile.rayui.mk
 
 # --------------------------------------------------------------
 # And... action
