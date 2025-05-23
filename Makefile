@@ -4,9 +4,23 @@
 # Created by falkTX
 #
 
+# select opengl version, go for max compatibility, make it visible for all spawned make (especially dgl)
+
+# HOTFIX: need to know about MAC now to set proper opengl version
+ifneq ($(MACOS),true)
+TARGET_MACHINE := $(shell $(CC) -dumpmachine)
+ifneq (,$(findstring apple,$(TARGET_MACHINE)))
+MACOS = true
+endif
+endif # MACOS
+
+# USE_GLES2 and USE_OPENGL3 tested working on macos and linux
+USE_GLES2=true
+export USE_GLES2
+
 include dpf/Makefile.base.mk
 
-all: dgl examples gen
+all: dgl examples gen plugins
 
 # --------------------------------------------------------------
 
@@ -40,11 +54,11 @@ tests: dgl
 # --------------------------------------------------------------
 
 clean:
-	$(MAKE) clean -C dgl
 	$(MAKE) clean -C dpf/dgl
 	$(MAKE) clean -C plugins/SimonPiano
 	$(MAKE) clean -C dpf/utils/lv2-ttl-generator
-	rm -rf bin build dpf-widgets/opengl/*.d dpf-widgets/opengl/*.o
+	$(MAKE) clean -C dpf-extra
+	rm -rf bin build 
 
 # --------------------------------------------------------------
 

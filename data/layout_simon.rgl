@@ -1,0 +1,36 @@
+#
+# rgl layout text file (v4.0) - raygui layout file generated using rGuiLayout
+#
+# Number of controls:     25
+#
+# Ref. window:    r <x> <y> <width> <height>
+# Anchor info:    a <id> <name> <posx> <posy> <enabled>
+# Control info:   c <id> <type> <name> <rectangle> <anchor_id> <text>
+#
+r 0 40 -1 -1
+a 001 anchor 360 120 1
+c 000 4 LabelStatus 200 0 568 32 1 Welcome
+c 001 4 LabelInstructions'' 200 40 568 32 1 Press Start for a new game
+c 002 5 ButtonStart 200 80 120 32 1 Start
+c 003 10 SelectScale 336 80 224 32 1 One Octave;D major;F# Major Pentatonic;25 keys;49 keys;61 keys;88 keys;Custom
+c 004 5 ButtonMidi 576 80 192 32 1 Enable WebMIDI
+c 005 16 SliderRoot 200 120 568 32 1 Root note: 128
+c 006 17 SliderBarNbKeys 200 160 568 32 1 Number of keys: 128
+c 007 4 LabelScale 48 200 144 32 1 Scale
+c 008 8 ToggleScaleC 200 200 40 32 1 C
+c 009 8 ToggleScaleCs 248 200 40 32 1 C#
+c 010 8 ToggleScaleD 296 200 40 32 1 D
+c 011 8 ToggleScaleDs 344 200 40 32 1 D#
+c 012 8 ToggleScaleE 392 200 40 32 1 E
+c 013 8 ToggleScaleF 440 200 40 32 1 F
+c 014 8 ToggleScaleFs 488 200 40 32 1 F#
+c 015 8 ToggleScaleG 536 200 40 32 1 G
+c 016 8 ToggleScaleGs 584 200 40 32 1 G#
+c 017 8 ToggleScaleA 632 200 40 32 1 A
+c 018 8 ToggleScaleAs 680 200 40 32 1 A#
+c 019 8 ToggleScaleB 728 200 40 32 1 B
+c 020 7 CheckBoxShallNotPass 200 240 32 32 1 Shall not pass
+c 021 17 SliderBarRounds 200 280 568 32 1 Rounds for miss: 128
+c 022 3 PianoHolder 0 320 768 136 1 Piano
+c 023 4 LabelMiss 200 464 568 32 1 Missed 0/0
+c 024 4 LabelBest 200 504 568 32 1 Current best: 0

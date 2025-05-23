@@ -15,7 +15,8 @@ enum Status {
                 PLAYING_WAIT, // waiting for the player
                 PLAYING_CORRECT,
                 PLAYING_INCORRECT,
-                PLAYING_OVER, // lost the round, wait before ending it for good (i.e. for key release)
+                FEEDBACK_INCORRECT, // after an error we give feedback
+                FEEDBACK_LOST, // once we lost
                 GAMEOVER,
 
                 STATUS_COUNT
@@ -89,7 +90,7 @@ class Rando {
   /* RAND_MAX assumed to be 32767 */
   int rand(void) {
     next = next * 1103515245 + 12345;
-    return((unsigned)(next/65536) % 32768);
+    return((unsigned)(next/65536) % (RANDO_MAX+1));
   }
 
   // c
@@ -101,5 +102,72 @@ class Rando {
   unsigned long next = 1;
   
 };
+
+// dealing with pseudo-presets in the ui
+// negative values would mean that the parameter is not dealt with for this preset
+struct Preset {
+  // name limited by space on-screen anyhow
+  char name[20];
+  int root;
+  int nbNotes;
+  int scale[12];
+};
+
+
+#define NB_PRESETS 8
+
+// note: two consecutive presets should not differ by only the presence of "-1", otherwise with current code it will not cycle
+const Preset presets[NB_PRESETS] = {
+  {"One Octave", 60, 12, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"D major",    60, 12, {1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1}},
+  // aka All-Blacks
+  {"F# Maj pentatonic", 60, 12, {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0}},
+  {"25 keys", 60-12, 25, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"49 keys", 60-24, 49, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"61 keys", 60-24, 61, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"88 keys", 60-39, 88, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+  {"Custom", -1, -1, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
+};
+
+// return -1 if the preset cannot be found
+inline int getPresetIdx(int root, int nbNotes, bool scale[12]) {
+  int i;
+  for (i=0; i < NB_PRESETS; i++) {
+    if ((presets[i].root >= 0 && root != presets[i].root) ||
+	(presets[i].nbNotes >= 0 && nbNotes != presets[i].nbNotes)) {
+      continue;
+    }
+    int j;
+    for (j=0; j < 12; j++) {
+      if (presets[i].scale[j] >=0 && scale[j] != presets[i].scale[j]) {
+	break;
+      }
+    }
+    // stopped during scale verification, no good
+    if (j < 12) {
+      continue;
+    }
+    // if we arrive here we got our preset
+    return i;
+  }
+  // nothing found
+  return -1;
+}
+
+// build a list of presets' names, to be consumed by a GuiComboBox
+static String getPresetsNames() {
+  String names;
+  for (int i=0; i < NB_PRESETS - 1; i++) {
+    names = names + presets[i].name;
+    names = names + ";";
+  }
+  // we don't want to end by a semi-column
+  if(NB_PRESETS > 0) {
+    names = names + presets[NB_PRESETS-1].name;
+  }
+  return names;
+}
+
+const String presetsNames = getPresetsNames();
 
 #endif /* SIMON_UTILS_H */

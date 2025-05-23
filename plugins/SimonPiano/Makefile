@@ -13,20 +13,12 @@ FILES_DSP = \
 	SimonPiano.cpp
 
 FILES_UI = \
-	SimonPianoUI.cpp \
-	../../dpf-widgets/opengl/DearImGui.cpp
-
-# --------------------------------------------------------------
-# Do some magic
-
-include ../../dpf/Makefile.plugins.mk
-
-# --------------------------------------------------------------
-# Adding  custom libs
-BUILD_CXX_FLAGS += -I../../src -I../../dpf-widgets/opengl
+	SimonPianoUI.cpp 
 
 # --------------------------------------------------------------
 # Select plugins
+# (to be set before including Makefile.rayui.mk for resources to work)
+# note: for web export only jack will be forced
 
 TARGETS += jack
 TARGETS += lv2_sep
@@ -34,4 +26,12 @@ TARGETS += vst2
 TARGETS += vst3
 TARGETS += clap
 
-all: $(TARGETS)
+# --------------------------------------------------------------
+# Do some magic -- customized for using raylib UI and copying resources
+
+include ../../dpf-extra/Makefile.rayui.mk
+
+# --------------------------------------------------------------
+# And... action
+
+all: raylib $(TARGETS) resources

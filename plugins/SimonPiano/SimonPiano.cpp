@@ -11,6 +11,13 @@ START_NAMESPACE_DISTRHO
 // how long each note is held during instruction
 #define NOTE_DURATION 0.5
 
+// state for a feedback
+enum FeedbackStatus {
+  FB_STATUS_START, // start feedback
+  FB_STATUS_RUN, // let feedback handle its state
+  FB_STATUS_STOP // emergency stop
+};
+
 class SimonPiano : public ExtendedPlugin {
 public:
   // Note: do not care with default values since we will sent all parameters upon init
@@ -326,10 +333,15 @@ protected:
   void setParameterValue(uint32_t index, float value) override {
     switch (index) {
     case kStart:
-      // only effectively start if waiting for it
-      if (start == false && value != start) {
-        if (!isRunning(status)) {
+      // effectively start if waiting for it
+      if (value != start) {
+        // effectively start if waiting for it
+        if (value && !isRunning(status)) {
           newGame();
+        }
+        // un-start: stopping the game
+        else if (!value && isRunning(status)) {
+          stop();
         }
       }
       start = value;
@@ -404,7 +416,7 @@ protected:
   }
 
   // user playing notes, shifting note to interval of interest.  keep channel and velocity for user during pass-through
-  void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) {
+  void noteOn(uint8_t note, uint8_t velocity, uint8_t channel, uint32_t frame) override {
     // Tries to be as smart as possible, if the input note is out of range consider that the position is just shifted (user might not have the correct octave configured)
     note = shiftNote(note); 
 
@@ -437,19 +449,16 @@ protected:
       else {
         status = PLAYING_INCORRECT;
         nbMiss++;
-        if (nbMiss > maxMiss) {
-          status = PLAYING_OVER;
-        }
       }
     }      
   }
 
   // will detect new round upon note off of last playing
-  void noteOff(uint8_t note, uint8_t channel, uint32_t frame) {
+  void noteOff(uint8_t note, uint8_t channel, uint32_t frame) override {
     // shift here is well
     note = shiftNote(note);
 
-    // NOTE: even if note on were filtered with shallNotPass, process everything here, we could well have a note off event after the option was switched o
+    // NOTE: even if note on were filtered with shallNotPass, process everything here, we could well have a note off event after the option was switched on
 
     // do not change status in-between games, just pass-through note off events
     if (!isRunning(status)) {
@@ -461,17 +470,13 @@ protected:
       }
     }
     // while playing check if round is over
-    else if (isPlaying(status) || status == PLAYING_OVER) {
+    else if (isPlaying(status)) {
       sendNoteOff(note, channel, frame);
       // take into account for play only if we turn off current note (we might also release part of a chord)
       if (note == curNote) {
-        // sequence is terminated
-        if (status == PLAYING_OVER) {
-          status = GAMEOVER;
-          // level up!
-          if (round > 0 && round - 1 > maxRound) {
-            maxRound = round - 1;
-          }
+        // user just hit an error, going to feedback mode
+        if (status == PLAYING_INCORRECT) {
+          feedbackIncorrect(FB_STATUS_START, frame);
         }
         // still in play, either next or new round
         else {
@@ -487,11 +492,20 @@ protected:
   }
 
   void newGame() {
-    reset();
-    status = STARTING;
-    // reset counters
-    lastTime = curTime;
-    round = 0;
+    // we prevent starting if the entire scale is disabled
+    bool isScale = false;
+    for (int i = 0; i < 12; i++) {
+      if (effectiveScale[i]) {
+        isScale = true;
+      }
+    }
+    if (isScale) {
+      reset();
+      status = STARTING;
+      // reset counters
+      lastTime = curTime;
+      round = 0;
+    }
   }
 
   // starting new instructions
@@ -516,7 +530,7 @@ protected:
   // draw another note to the sequence
   void addNote() {
     if (round >= MAX_ROUND) {
-      status = GAMEOVER;
+      stop();
     }
     else if (round >= 0) {
       // brute-force the possible notes considering root, number of notes, scale
@@ -552,7 +566,7 @@ protected:
     else if (stepN < MAX_ROUND) {
       curNote = sequence[stepN];
       if (curNote >= 0) {
-        // first channel and full velocity by default
+        // last used channel and full velocity by default
         curChannel = 0;
         sendNoteOn(curNote, 127, curChannel, frame);
         stepN++;
@@ -560,7 +574,95 @@ protected:
     }
   }
 
-  void process(uint32_t nbSamples, uint32_t frame) {
+  // deal with feedback incorrect, check if lost
+  // flag: true to start the feedback, otherwise let it run
+  // note: handles its own state, send notes to last used channel
+  void feedbackIncorrect(FeedbackStatus flag, uint32_t frame=0) {
+    switch (flag) {
+    // start incorrect feedback
+    case FB_STATUS_START:
+      status = FEEDBACK_INCORRECT;
+      // init counter
+      lastTime = curTime;
+      // bad chord for bad feedback
+      sendNoteOn(45, 127, curChannel, frame);
+      sendNoteOn(46, 127, curChannel, frame);
+      sendNoteOn(47, 127, curChannel, frame);
+      break;
+    // let it run
+    case FB_STATUS_RUN:
+      // time to end the notes
+      if (curTime - lastTime >= NOTE_INTERVAL) {
+        // turn off ourselves
+        feedbackIncorrect(FB_STATUS_STOP, frame);
+        // this was the last straw
+        if (nbMiss > maxMiss) {
+          feedbackLost(FB_STATUS_START, frame);
+        }
+        // again player's turn
+        else {
+          status = PLAYING_WAIT;
+        }
+      }
+      break;
+      // emergency stop
+    case FB_STATUS_STOP:
+      // check if we are indeed in this feedback before turning off
+      sendNoteOff(45, curChannel, frame);
+      sendNoteOff(46, curChannel, frame);
+      sendNoteOff(47, curChannel, frame);
+      break;
+    default:
+      break;;
+    }
+  }
+
+  // deal with feedback once game is lost, terminate round once done
+  // raise: true to start the feedback, otherwise let it run
+  // note: handles its own state, send notes to last used channel
+  void feedbackLost(FeedbackStatus flag, uint32_t frame=0) {
+    // the "medoly" we will play upon loss
+    static const int lostNbNotes = 3;
+    static const int lostNotes[lostNbNotes] = {60, 57, 53};
+
+    switch(flag) {
+      // start incorrect feedback
+    case FB_STATUS_START:
+      status = FEEDBACK_LOST;
+      // init counter
+      lastTime = curTime;
+      feedbackCounter = 0;
+      sendNoteOn(lostNotes[feedbackCounter], 127, curChannel, frame);
+      break;
+    case FB_STATUS_RUN:
+      // time to end the notes
+      if (curTime - lastTime >= NOTE_INTERVAL) {
+        // turn off current note
+        feedbackLost(FB_STATUS_STOP, frame);
+        // next in the medoly
+        feedbackCounter++;
+        // finished for good
+        if (feedbackCounter >= lostNbNotes) {
+          stop();
+        }
+        // continue
+        else {
+          lastTime = curTime;
+          sendNoteOn(lostNotes[feedbackCounter], 127, curChannel, frame);
+        }
+      }
+      break;
+    case FB_STATUS_STOP:
+        if (feedbackCounter < lostNbNotes) {
+          sendNoteOff(lostNotes[feedbackCounter], curChannel, frame);
+        }
+      break;
+    default:
+      break;
+    }
+  }
+
+  void process(uint32_t nbSamples, uint32_t frame) override {
     // in-between games, sync state
     // Note: upon change on root or nbNotes we will kill any pending notes, to avoid stuck keys upon shifting
     if (!isRunning(status)) {
@@ -582,6 +684,25 @@ protected:
       for (int i = 0; i < 12; i++) {
         effectiveScale[i] = scale[i];
       }
+    }
+
+    // the game might have ended from user call, check here if we need to abort a note
+    if (stopping) {
+      // check for emergency abort of feedback
+      switch(status) {
+      case FEEDBACK_INCORRECT:
+        feedbackIncorrect(FB_STATUS_STOP, frame);
+        break;
+      case FEEDBACK_LOST:
+        feedbackLost(FB_STATUS_STOP, frame);
+        break;
+      default:
+        break;
+      }
+      // abort current note, if any
+      abortCurrentNote(frame);
+      stopping = false;
+      status = GAMEOVER;
     }
 
     // update time
@@ -613,12 +734,29 @@ protected:
           }
         }
           break;
+      case FEEDBACK_INCORRECT:
+        // currently giving feedback, let it run
+        feedbackIncorrect(FB_STATUS_RUN, frame + i);
+        break;
+      case FEEDBACK_LOST:
+        feedbackLost(FB_STATUS_RUN, frame + i);
+        break;
       default:
         break;
       }
     }
 
   };
+
+  // abort current play: raise flag, update max round
+  // note: do not discard current note here since we might be called outside of process()
+  void stop() {
+    stopping = true;
+    // level up!
+    if (round > 0 && round - 1 > maxRound) {
+      maxRound = round - 1;
+    }
+  }
 
   // reset inner state upon new game
   // NOTE: *not* resetting curNote as is can be needed to abort later on, reset being called outside of run (
@@ -632,6 +770,7 @@ protected:
     nbMiss = 0;
     maxMiss = 0;
     lastRFM = 0;
+    stopping = false;
   }
 
 private:
@@ -670,6 +809,10 @@ private:
   Rando ran;
   // last time a miss was granted
   int lastRFM = 0;
+  // user requested abort or conditions reached for end
+  bool stopping = false;
+  // generic counter that can be used by feedback
+  unsigned int feedbackCounter = 0;
 
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPiano);
 };

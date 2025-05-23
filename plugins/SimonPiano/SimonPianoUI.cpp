@@ -1,18 +1,39 @@
 
-#include "DistrhoUI.hpp"
+// how often no refresh on idle state, in Hz. 0 to disable animation during idle state
+#define UI_REFRESH_RATE 30
+// how many frames per seconds for animations
+#define ANIM_FRAME_RATE 60
+
+#include "RayUI.hpp"
 #include "SimonUtils.h"
+// for requestMIDI for web
+#if defined(DISTRHO_OS_WASM)
+#include "DistrhoStandaloneUtils.hpp"
+#endif
 
 START_NAMESPACE_DISTRHO
 
-// some shared color
-const ImU32 colBackground = ImColor(ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); 
-const ImU32 colBlackKey = ImColor(ImVec4(0.0f, 0.0f, 0.0f, 1.0f)); 
-const ImU32 colWhiteKey = ImColor(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
-const ImU32 colBlackKeyDimmed = ImColor(ImVec4(0.33f, 0.33f, 0.33f, 1.0f)); 
-const ImU32 colWhiteKeyDimmed = ImColor(ImVec4(0.66f, 0.66f, 0.66f, 1.0f)); 
-const ImU32 colInstructionKey = ImColor(ImVec4(0.0f, 0.0f, 1.0f, 1.0f)); 
-const ImU32 colCorrectKey = ImColor(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); 
-const ImU32 colIncorrectKey = ImColor(ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); 
+// codes for used sprites
+enum KeyIdx 
+{
+  BLACK_KEY,
+  WHITE_KEY,
+  BLACK_KEY_DIMMED,
+  WHITE_KEY_DIMMED,
+  BLACK_KEY_INSTRUCTION,
+  WHITE_KEY_INSTRUCTION,
+  BLACK_KEY_CORRECT,
+  WHITE_KEY_CORRECT,
+  BLACK_KEY_INCORRECT,
+  WHITE_KEY_INCORRECT,
+  BLACK_KEY_PLAY,
+  WHITE_KEY_PLAY,
+  BLACK_KEY_DEBUG,
+  WHITE_KEY_DEBUG,
+  BACKGROUND_LEFT,
+  BACKGROUND_RIGHT,
+  BACKGROUND_FELT,
+};
 
 // return true if the key for this note is C, D, E, F, G, A, B
 bool isKeyWhite(uint note) {
@@ -34,35 +55,66 @@ uint getNbWhiteKeys(uint rootKey, uint nbKeys) {
   return getNbWhiteKeys(0, nbKeys + rootKey % 12) - getNbWhiteKeys(0, rootKey % 12);
 }
 
-// --------------------------------------------------------------------------------------------------------------------
-
-class SimonPianoUI : public UI
+class SimonPianoUI : public RayUI
 {
 public:
    /**
       UI class constructor.
       The UI should be initialized to a default state that matches the plugin side.
     */
-    SimonPianoUI()
-        : UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT)
-    {
-        double scaleFactor = getScaleFactor();
-	if (scaleFactor <= 0.0) {
-	  scaleFactor = 1.0;
-	}
 
-        if (d_isEqual(scaleFactor, 1.0))
-        {
-            setGeometryConstraints(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT);
-        }
-        else
-        {
-            const uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-            const uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
-            setGeometryConstraints(width, height);
-            setSize(width, height);
-        }
+  SimonPianoUI() : RayUI(UI_REFRESH_RATE, TEXTURE_FILTER_POINT)
+    {
+      String resourcesLocation = getResourcesLocation();
+      d_stdout("resources location: %s", resourcesLocation.buffer());
+
+      // load texture for piano keys
+      piano = LoadTexture(resourcesLocation + "piano.png");
+
+      // camera above origin, high enough to fit model with fov and have full model in view
+      camera.position = (Vector3){ 0.0, 5.1, 0.0 };
+      // toward origin
+      camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+      // camera pointing down
+      camera.up = (Vector3){ 0.0, 0.0, -1.0};
+      // field-of-view Y, we want to avoid deformations too extreme with perspective
+      camera.fovy = 90.0f/8;
+      // camera projection type
+      camera.projection = CAMERA_PERSPECTIVE;
+
+      // load model and animation
+      model = LoadModel(resourcesLocation + "piano.gltf");
+      d_stdout("model loaded. material count: %d, mesh count: %d", model.materialCount, model.meshCount);
+      // expect first animation key press, second wrong key
+	// TODO: detect anim mapping depending on name?
+      modelAnimations = LoadModelAnimations(resourcesLocation + "piano.gltf", &animsCount);
+      d_stdout("anim loaded, count %d", animsCount);
+
+      // init texture used to draw piano, wide as a hack to tune margins ratio on the shape on-screen
+      texturePiano = LoadRenderTexture(1024, 128);
+      // for 3D scene, mesh is supposed to be a square, will help with filtering on Y during key press animation and subsequent rotation
+      canvasPiano = LoadRenderTexture(1024, 1024);
+      // to deal with lots of keys we enable filtering for both
+      SetTextureFilter(texturePiano.texture, TEXTURE_FILTER_BILINEAR);
+      SetTextureFilter(canvasPiano.texture, TEXTURE_FILTER_BILINEAR);
+
+      // last texture should be the one we target for the surface of the piano
+      if (model.materialCount > 0) {
+	// first unload texture that will not be used
+	rlUnloadTexture(model.materials[model.materialCount-1].maps[MATERIAL_MAP_DIFFUSE].texture.id);
+	// replace model texture with this one
+	SetMaterialTexture(&(model.materials[model.materialCount-1]), MATERIAL_MAP_DIFFUSE, texturePiano.texture);
+      }
     }
+
+  ~SimonPianoUI() {
+    // Texture unloading
+    UnloadTexture(piano);
+    UnloadRenderTexture(texturePiano);
+    // unload model (including meshes) and animations
+    UnloadModelAnimations(modelAnimations, animsCount);
+    UnloadModel(model);
+  }
 
 protected:
     // ----------------------------------------------------------------------------------------------------------------
@@ -135,150 +187,347 @@ protected:
 
     // ----------------------------------------------------------------------------------------------------------------
     // Widget Callbacks
+  void onMainDisplay() override
+  {
+    ClearBackground(BLUE);
 
-   /**
-      ImGui specific onDisplay function.
-    */
-    void onImGuiDisplay() override
-    {
+    // render piano to texture -- on main display rather than canvas because cannot nest texture rendering
+    BeginTextureMode(texturePiano);
+    // note: since rendered to another canvas afterward no need to flip
+    drawPiano({0, 0}, {(float)texturePiano.texture.width, (float)texturePiano.texture.height}, root, nbNotes, true);
+    EndTextureMode();
 
-      // compute base width/height
-      double scaleFactor = getScaleFactor();
-      if (scaleFactor <= 0.0) {
-	scaleFactor = 1.0;
+    // Select current animation
+    if (animsCount > 0) {
+      bool  newAnim = false;
+      // we are playing a new note, anim key press
+      if (animNote != curNote && curNote >= 0) {
+	animIndex = 0;
+	newAnim = true;
       }
-      uint width = DISTRHO_UI_DEFAULT_WIDTH * scaleFactor;
-      uint height = DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor;
-
-      // take into account resize of window
-      double scaleWidth = getWidth() / (float) width;
-      double scaleHeight = getHeight() / (float) height;
-      if (scaleWidth < scaleHeight) {
-	scaleFactor = scaleFactor * scaleWidth;
+      // anim wrong upon said feedback
+      else if (animsCount > 1 && animStatus != status && status == FEEDBACK_INCORRECT) {
+	animIndex = 1;
+	newAnim = true;
       }
+      // anim lost upon said feedback
+      else if (animsCount > 2 && animStatus != status && status == FEEDBACK_LOST) {
+	animIndex = 2;
+	newAnim = true;
+      }
+      // nothing new to animate, just stay still
+      else if (curNote < 0 && status != FEEDBACK_INCORRECT && status != FEEDBACK_LOST && animIndex >= 0 && animCurrentTime >= animDuration) {
+	animIndex = -1;
+	// first frame of first animation for still
+	UpdateModelAnimation(model, modelAnimations[0], 0);
+      }
+      // we have an animation to (re)set
+      if (newAnim && animIndex >= 0 && animIndex < animsCount) {
+	animCurrentTime = 0;
+	animDuration = modelAnimations[animIndex].frameCount / (float) ANIM_FRAME_RATE;
+	// set to first frame
+	UpdateModelAnimation(model, modelAnimations[animIndex], 0);
+      }
+      // since animation is already set to first frame, start on next framees
       else {
-	scaleFactor = scaleFactor * scaleHeight;
-	// larger than ratio, center
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	// Update model animation, if any
+	if (animIndex >= 0 && animIndex < animsCount) {
+	  ModelAnimation anim = modelAnimations[animIndex];
+	  if (anim.frameCount > 0 && animDuration > 0 && animCurrentTime < animDuration) {
+	    animCurrentTime += GetFrameTime();
+	    int animCurrentFrame =  anim.frameCount * animCurrentTime / animDuration;
+	    // play animation once
+	    if (animCurrentFrame >= anim.frameCount) {
+	      animCurrentFrame = anim.frameCount - 1;
+	    }
+	    UpdateModelAnimation(model, anim, animCurrentFrame);
+	  }
+	}
       }
 
-      // padding is a fraction of the area
-      ImVec2 winPadding(DISTRHO_UI_DEFAULT_WIDTH * 0.01 * scaleFactor, DISTRHO_UI_DEFAULT_HEIGHT * 0.01 * scaleFactor);
+      animNote = curNote;
+      animStatus = status;
+      newAnim = false;
+    }
 
-      // center window with fixed ration defined by default width and height
-      ImGui::SetNextWindowPos(ImVec2((getWidth() - DISTRHO_UI_DEFAULT_WIDTH * scaleFactor) /2, (getHeight() - DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor) /2));
-      ImGui::SetNextWindowSize(ImVec2(DISTRHO_UI_DEFAULT_WIDTH * scaleFactor, DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor));
+    // draw piano mesh to virtual scene
+    BeginTextureMode(canvasPiano);
+    // we have to clear background for anything to display
+    ClearBackground(Color({0,0,0,0}));
+    BeginMode3D(camera);
+    // Draw animated model, original scale, no tint
+    DrawModel(model, position, 1.0f, WHITE);
+    EndMode3D();
 
-      // alter background color to check position
-      ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
-      ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-      // specify our own padding to better scale and know it
-      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, winPadding);
-      // we only use one window, will take all space and hide controls except for scroll bar if necessary
-      ImGui::Begin("Demo window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    EndTextureMode();
+  }
+  
+  void onCanvasDisplay() override
+  {
 
-      // scale UI
-      ImGui::SetWindowFontScale(scaleFactor);
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+    GuiSetState(STATE_NORMAL);
+    
+    switch (status) {
+    case WAITING:
+      GuiLabel(layoutRecs[0], "Welcome");
+      GuiLabel(layoutRecs[1], "Press Start for a new game");
+      break;
+    case STARTING:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d", round));
+      GuiLabel(layoutRecs[1], TextFormat("Pay attention..."));
+      break;
+    case INSTRUCTIONS:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d - step %d", round, step));
+      GuiLabel(layoutRecs[1], TextFormat("Play after me!"));
+      break;
+    case GAMEOVER:
+      GuiLabel(layoutRecs[0], TextFormat("Game over during Round %d - step %d", round, step));
+      GuiLabel(layoutRecs[1], TextFormat("Try again!"));
+      break;
+    case PLAYING_WAIT:
+    case PLAYING_CORRECT:
+    case PLAYING_INCORRECT:
+    case FEEDBACK_INCORRECT:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d - step %d", round, step));
+      GuiLabel(layoutRecs[1], TextFormat("Your turn!"));
+      break;
+    default:
+      GuiLabel(layoutRecs[0], TextFormat("Round %d", round));
+      GuiLabel(layoutRecs[1], TextFormat("Play after me!"));
+      break;
+    }
 
-      switch (status) {
-      case WAITING:
-	ImGui::TextWrapped("Welcome");
-	ImGui::TextWrapped("Press start for a new game");
-	break;
-      case STARTING:
-	ImGui::TextWrapped("Round %d", round);
-	ImGui::TextWrapped("Pay attention...");
-	break;
-      case INSTRUCTIONS:
-	ImGui::TextWrapped("Round %d -- step %d", round, step);
-	ImGui::TextWrapped("Play after me!");
-	break;
-      case GAMEOVER:
-	ImGui::TextWrapped("Game over during Round %d -- step %d", round, step);
-	ImGui::TextWrapped("Try again!");
-	break;
-      case PLAYING_WAIT:
-      case PLAYING_CORRECT:
-      case PLAYING_INCORRECT:
-      case PLAYING_OVER:
-	ImGui::TextWrapped("Round %d -- step %d", round, step);
-	ImGui::TextWrapped("Your turn!");
-	break;
-      default:
-	ImGui::TextWrapped("Round %d", round);
-	ImGui::TextWrapped("Play after me!");
-	break;
+    // same button for start/stop
+    if (isRunning(status)) {
+      // highlight button for abort
+      GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, GuiGetStyle(DEFAULT, BASE_COLOR_PRESSED));
+      GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, GuiGetStyle(DEFAULT, TEXT_COLOR_PRESSED));
+      GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, GuiGetStyle(DEFAULT, TEXT_COLOR_FOCUSED));
+      GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, GuiGetStyle(DEFAULT, BASE_COLOR_FOCUSED));
+      if(GuiButton(layoutRecs[2], "Abort")) {
+	// send false/true cylce to make sure to toggle
+	setParameterValue(kStart, true);
+	setParameterValue(kStart, false);
       }
-
-      // --- disable part of the UI during game ---
-      if (isRunning(status)) {
-	ImGui::BeginDisabled();
-      }
-      if (ImGui::Button("Start")) {
+      GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, GuiGetStyle(DEFAULT, BASE_COLOR_NORMAL));
+      GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, GuiGetStyle(DEFAULT, TEXT_COLOR_NORMAL));
+      GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, GuiGetStyle(DEFAULT, BASE_COLOR_FOCUSED));
+      GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, GuiGetStyle(DEFAULT, TEXT_COLOR_FOCUSED));
+    } else {
+      if(GuiButton(layoutRecs[2], "Start")) {
 	// send false/true cylce to make sure to toggle
 	setParameterValue(kStart, false);
 	setParameterValue(kStart, true);
       }
-
-      // sync root note
-      int uiRoot = root;
-      ImGui::SliderInt("Root note", &uiRoot, params[kRoot].min, params[kRoot].max);
-      // only send value if updated -- and might not be taken into account if game is running
-      if (uiRoot != root) {
-	setParameterValue(kRoot, uiRoot);
-      }
-
-      // same for number of notes/keys
-      // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or inscrease upon changing root)
-      int uiNbNotes = nbNotes;
-      ImGui::SliderInt("Number of keys", &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
-      if (uiNbNotes != nbNotes) {
-	setParameterValue(kNbNotes, uiNbNotes);
-      }
-
-      drawScale(scaleFactor);
-
-      // --- end disable part of the UI during game ---
-      if (isRunning(status)) {
-	ImGui::EndDisabled();
-      }
-      ImGui::Spacing();
-
-      // option about letting notes through on not
-      bool uiShallNotPass = shallNotPass;
-      ImGui::Checkbox("Shall not pass", &uiShallNotPass);
-      if (uiShallNotPass != shallNotPass) {
-	shallNotPass = uiShallNotPass;
-	setParameterValue(kShallNotPass, shallNotPass);
-      }
-
-      // sync rounds for miss
-      int uiRoundsForMiss = roundsForMiss;
-      ImGui::SliderInt("Rounds for miss", &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
-      if (uiRoundsForMiss != roundsForMiss) {
-	roundsForMiss = uiRoundsForMiss;
-	setParameterValue(kRoundsForMiss, roundsForMiss);
-      }
-
-      ImGui::Spacing();
-
-      // draw next to current position
-      const ImVec2 p = ImGui::GetCursorScreenPos(); 
-      const ImVec2 keyboardSize(ImGui::GetWindowSize().x - winPadding.x * 2, 200 * scaleFactor);
-      drawPiano(p, keyboardSize, root, nbNotes);
-      // move along
-      ImGui::SetCursorScreenPos(p + keyboardSize) ;
-      ImGui::Spacing();
-      ImGui::TextWrapped("Missed %d/%d", nbMiss, maxMiss);
-      ImGui::TextWrapped("Current best: %d", maxRound);
-
-      ImGui::End();
-      
     }
 
-    // ----------------------------------------------------------------------------------------------------------------
+    // disable part of the UI during play
+    if (isRunning(status)) {
+      GuiSetState(STATE_DISABLED);
+    }
+
+    int preset = getPresetIdx(root, nbNotes, scale);
+    if (preset < 0) {
+      // failsafe, last should be custom
+      preset = NB_PRESETS - 1;
+    }
+    // somehow presets, a tad tedious
+    int uiPreset = preset;
+
+    GuiComboBox(layoutRecs[3], presetsNames, &uiPreset);
+    if (uiPreset != preset) {
+      // special case for last preset, custom, we force cycle because nothing would change upon selection
+      if (uiPreset >= NB_PRESETS - 1) {
+	uiPreset = 0;
+      }
+      if (presets[uiPreset].root >= 0 && presets[uiPreset].root != root) {
+	setParameterValue(kRoot, presets[uiPreset].root);
+      }
+      if (presets[uiPreset].nbNotes >= 0 && presets[uiPreset].nbNotes != nbNotes) {
+	setParameterValue(kNbNotes, presets[uiPreset].nbNotes);
+      }
+      for (int i=0; i < 12; i++) {
+	if (presets[uiPreset].scale[i] >= 0 && presets[uiPreset].scale[i] != scale[i]) {
+	  setParameterValue(kScaleC + i, !scale[i]);
+	}
+      }
+    }
+    
+    // An additional button (aligned with Start) on the web to ask for webmidi permission
+#if defined(DISTRHO_OS_WASM)
+    if (supportsMIDI() && !isMIDIEnabled() && GuiButton(layoutRecs[4], "Enable WebMIDI")) {
+      requestMIDI();
+    }
+#endif
+
+    // sync root note
+    float uiRoot = root;
+    GuiSlider(layoutRecs[5], TextFormat("Root note: %d", (int)uiRoot), NULL, &uiRoot, params[kRoot].min, params[kRoot].max);
+    // only send value if updated -- and might not be taken into account if game is running
+    if ((int)uiRoot != root) {
+      // note: output parameters will be fired back
+      setParameterValue(kRoot, (int)uiRoot);
+    }
+
+    // same for number of notes/keys
+    // TODO: the max number of notes will change depending on root, not that great for this UI (could reset or increase upon changing root)
+    float uiNbNotes = nbNotes;
+    GuiSliderBar(layoutRecs[6], TextFormat("Number of keys: %d", (int)uiNbNotes), NULL, &uiNbNotes, params[kNbNotes].min, params[kNbNotes].max);
+    if ((int)uiNbNotes != nbNotes) {
+      setParameterValue(kNbNotes, (int)uiNbNotes);
+    }
+
+    // this label shoul be aligned as with widgets legends, revert style temporarily
+    GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_RIGHT);
+    GuiLabel(layoutRecs[7], "Scale");
+    GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
+    // first white keys
+    GuiSetStyle(TOGGLE, BORDER_COLOR_NORMAL, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_NORMAL, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_NORMAL, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_FOCUSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0x515151ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_FOCUSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_PRESSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_PRESSED, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_DISABLED, (int)0x515151ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0xd9d9d9ff);
+    for (int i=0; i < 12; i++) {
+      if(isKeyWhite(i)) {
+	// toggles are inverted, we activate to disable note
+	bool scaleToggle = !scale[i];
+	GuiToggle(layoutRecs[8+i], scaleNotes[i], &scaleToggle);
+	if (scaleToggle != !scale[i]) {
+	  setParameterValue(kScaleC + i, !scale[i]);
+	}
+      }
+    }
+
+    // then black keys
+    GuiSetStyle(TOGGLE, BORDER_COLOR_NORMAL, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_NORMAL, (int)0x000000ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_NORMAL, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_FOCUSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_FOCUSED, (int)0x515151ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_FOCUSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_PRESSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_PRESSED, (int)0x323232ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_PRESSED, (int)0xffffffff);
+    GuiSetStyle(TOGGLE, BORDER_COLOR_DISABLED, (int)0xd9d9d9ff);
+    GuiSetStyle(TOGGLE, BASE_COLOR_DISABLED, (int)0x323232ff);
+    GuiSetStyle(TOGGLE, TEXT_COLOR_DISABLED, (int)0xd9d9d9ff);
+    for (int i=0; i < 12; i++) {
+      if(!isKeyWhite(i)) {
+	bool scaleToggle = !scale[i];
+	GuiToggle(layoutRecs[8+i], scaleNotes[i], &scaleToggle);
+	if (scaleToggle != !scale[i]) {
+	  setParameterValue(kScaleC + i, !scale[i]);
+	}
+      }
+    }
+
+    // NOTE: no need to go back to default style for toggle as it is no used (yet?) elsewhere
+
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+
+    
+    // --- end disable part of the UI during game ---
+    GuiSetState(STATE_NORMAL);
+
+    // option about letting notes through on not
+    bool uiShallNotPass = shallNotPass;
+    GuiCheckBox(layoutRecs[20], "Shall not pass", &uiShallNotPass);
+    if (uiShallNotPass != shallNotPass) {
+      // note: we have to sync in ui non-output parameters changed from ui, won't be fired back
+      shallNotPass = uiShallNotPass;
+      setParameterValue(kShallNotPass, uiShallNotPass);
+    }
+
+    // sync rounds for miss
+    float uiRoundsForMiss = roundsForMiss;
+    GuiSliderBar(layoutRecs[21], TextFormat("Rounds for miss: %d", (int)uiRoundsForMiss ), NULL, &uiRoundsForMiss, params[kRoundsForMiss].min, params[kRoundsForMiss].max);
+    if ((int)uiRoundsForMiss != roundsForMiss) {
+      roundsForMiss = (int)uiRoundsForMiss;
+      setParameterValue(kRoundsForMiss, (int)uiRoundsForMiss);
+    }
+
+    // render the 3D scene
+    DrawTexturePro(
+		   canvasPiano.texture,
+		   // flip Y so we get the right texture
+		   (Rectangle){ 0.0f, 0.0f , (float)canvasPiano.texture.width, -(float)canvasPiano.texture.height },
+		   (Rectangle){layoutRecs[22].x, layoutRecs[22].y, layoutRecs[22].width, layoutRecs[22].height },
+		   (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+    GuiLabel(layoutRecs[23], TextFormat("Missed %d/%d", nbMiss, maxMiss));
+    GuiLabel(layoutRecs[24], TextFormat("Current best: %d", maxRound));
+
+    DrawFPS(10, 10);
+  }
+
+    // -------------------------------------------------------------------------------------------------- --------------
 
 private:
+  // texture for piano keys
+  Texture2D piano;
+  // upper left reference point for UI
+  static constexpr Vector2 anchor = { 15, 10 };
+  // layout of the GUI
+  const Rectangle layoutRecs[25] = {
+    (Rectangle){ anchor.x + 200, anchor.y + 0, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 40, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 80, 120, 32 },
+    (Rectangle){ anchor.x + 336, anchor.y + 80, 224, 32 },
+    (Rectangle){ anchor.x + 576, anchor.y + 80, 192, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 120, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 160, 568, 32 },
+    (Rectangle){ anchor.x + 48, anchor.y + 200, 144, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 248, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 296, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 344, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 392, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 440, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 488, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 536, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 584, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 632, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 680, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 728, anchor.y + 200, 40, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 240, 32, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 280, 568, 32 },
+    (Rectangle){ anchor.x + 0, anchor.y + 320, 768, 136 },
+    (Rectangle){ anchor.x + 200, anchor.y + 464, 568, 32 },
+    (Rectangle){ anchor.x + 200, anchor.y + 504, 568, 32 },
+  };
+
+  // used for 3D rendering
+  Camera camera;
+  // model and its position
+  Model model;
+  Vector3 position = { 0.0f, 0.0f, 0.0f };
+  // Load gltf model animations
+  int animsCount = -1;
+  // array of animations contained in the model
+  ModelAnimation *modelAnimations;
+  // selected animation, < 0: disable animation
+  int animIndex = -1;
+  // duration in seconds for current anim
+  float animDuration = 0;
+  // how long in current anim we are
+  float animCurrentTime = 0;
+  // status for animation
+  int animNote = params[kCurNote].def;
+  int animStatus = params[kStatus].def;
+  // render texture to mesh
+  RenderTexture2D texturePiano;
+  // render 3D scene to canvas
+  RenderTexture2D canvasPiano;
+
+
   // parameters sync with DSP
   int status = params[kStatus].def;
   int root = params[kRoot].def;
@@ -292,190 +541,190 @@ private:
   int maxMiss = params[kMaxMiss].def;
   int maxRound = params[kMaxRound].def;
   bool shallNotPass = params[kShallNotPass].def;
-  
+
+  // extract and draw sprite id a said location and size
+  // also background, hacking slightly
+  // flip: Y flip for sprite
+  void drawKey(KeyIdx idx, Vector2 pos, Vector2 size, bool flip = false) {
+    // fixed size for all keys in the sprite sheet
+    static const Rectangle spriteSize = {0, 0, 16, 64};
+    // picking the right position
+    int spriteShift = 0;
+    switch(idx) {
+    case BLACK_KEY:
+      spriteShift = 2;
+      break;
+    case WHITE_KEY:
+      spriteShift = 0;
+      break;
+    case BLACK_KEY_DIMMED:
+      spriteShift = 6;
+      break;
+    case WHITE_KEY_DIMMED:
+      spriteShift = 4;
+      break;
+    case BLACK_KEY_INSTRUCTION:
+      spriteShift = 15;
+      break;
+    case WHITE_KEY_INSTRUCTION:
+      spriteShift = 13;
+      break;
+    case BLACK_KEY_CORRECT:
+      spriteShift = 19;
+      break;
+    case WHITE_KEY_CORRECT:
+      spriteShift = 17;
+      break;
+    case BLACK_KEY_INCORRECT:
+      spriteShift = 23;
+      break;
+    case WHITE_KEY_INCORRECT:
+      spriteShift = 21;
+      break;
+    case BLACK_KEY_PLAY:
+      spriteShift = 11;
+      break;
+    case WHITE_KEY_PLAY:
+      spriteShift = 9;
+      break;
+    case BLACK_KEY_DEBUG:
+      spriteShift = 3;
+      break;
+    case BACKGROUND_LEFT:
+      spriteShift = 24;
+      break;
+    case BACKGROUND_RIGHT:
+      spriteShift = 25;
+      break;
+    case BACKGROUND_FELT:
+      spriteShift = 26;
+      break;
+    default:
+    case WHITE_KEY_DEBUG:
+      spriteShift = 1;
+      break;
+    }
+    
+    // flip sprite if set
+    float spriteHeight = spriteSize.height;
+    if (flip) {
+      spriteHeight *= -1;
+    }
+    // no rotation, no tint
+    DrawTexturePro(piano, {spriteSize.x + spriteShift * spriteSize.width, spriteSize.y, spriteSize.width, spriteHeight}, {pos.x, pos.y, size.x, size.y}, {0.0, 0.0}, 0, WHITE);
+  }
+
   // drawing a very simple keyboard using imgui, fetching drawList
   // pos: upper left corner of the widget
   // size: size of the widget
-  void drawPiano(ImVec2 pos, ImVec2 size, uint rootKey, uint nbKeys) {
-    ImDrawList* draw_list = ImGui::GetWindowDrawList(); 
-
+  // flip: will flip sprites in Y-axis, e.g. used for textures and different origin for OpenGL
+  void drawPiano(Vector2 pos, Vector2 size, uint rootKey, uint nbKeys, bool flip = false) {
     // find number of white keys
     int nbWhiteKeys = getNbWhiteKeys(rootKey, nbKeys);
     // in case we start or end with black, leave some padding as half a white
     float uiNbWhiteKeys = nbWhiteKeys;
     if (!isKeyWhite(rootKey)) {
       uiNbWhiteKeys += 0.5;
-    } 
+    }
     if (!isKeyWhite(rootKey + nbKeys - 1)) {
       uiNbWhiteKeys += 0.5;
     }
-    // around keyboard, between keys -- would be same ratio for 12 notes
-    ImVec2 spacing;
-    spacing.x = size.x / (uiNbWhiteKeys + 1) * 0.1f;
-    spacing.y = size.y / 7 * 0.1f;
-    ImVec2 whiteKeySize;
-    whiteKeySize.x = (size.x  - spacing.x * (uiNbWhiteKeys + 1)) / uiNbWhiteKeys;
-    // whole height except margin
-    whiteKeySize.y = size.y - spacing.y * 2;
-    ImVec2 blackKeySize;
-    blackKeySize.x = (whiteKeySize.x - 2 * spacing.x) * 0.4;
-    blackKeySize.y = whiteKeySize.y * 0.4;
-    // background area for black keys
-    ImVec2 blackBackgroundSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
+    // around keyboard, between keys
+    // keep ratio of sprite -- FIXME: actually depends on the actual displayed ratio
+    Vector2 margins = {size.y * 0.25f, 0.0f};
+    // black keys over whites, width of a key will be conditioned by the former
+    Vector2 keySize;
+    keySize.x = (size.x  - margins.x * 2) / uiNbWhiteKeys;
+    keySize.y = size.y - margins.y * 2;
 
-    // draw the background
-    draw_list->AddRectFilled(pos, pos + size, colBackground);
+    // draw the background, sides
+    drawKey(BACKGROUND_LEFT, {pos.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y}, flip);
+    drawKey(BACKGROUND_RIGHT, {pos.x + size. x -margins.x, pos.y+margins.y}, {margins.x, size.y - 2*margins.y}, flip);
+    // background
+    drawKey(BACKGROUND_FELT, {pos.x + margins.x, pos.y + margins.y}, {size.x - 2 * margins.x, size.y - 2*margins.y}, flip);
 
     // base position for current key
-    ImVec2 startPos = pos + spacing;
+    Vector2 startPos = {pos.x + margins.x, pos.y + margins.y};
     // shift if we start with black key
     if (!isKeyWhite(rootKey)) {
-      startPos.x += whiteKeySize.x * 0.5;
+      startPos.x += keySize.x * 0.5;
     }
-    ImVec2 curPos(startPos);
-    ImU32 colCurKey;
+    Vector2 curPos(startPos);
+    KeyIdx sprite;
 
     // first draw white keys
     uint note = rootKey;
-    for (uint i = 0; i < nbKeys; i++) { 
+    for (uint i = 0; i < nbKeys; i++) {
       if(isKeyWhite(note)) {
 	// dimm key if not in scale and option set
 	if (shallNotPass && !scale[note % 12]) {
-	  colCurKey = colWhiteKeyDimmed;
+	  sprite = WHITE_KEY_DIMMED;
 	}
 	else {
-	  colCurKey = colWhiteKey;
+	  sprite = WHITE_KEY;
 	}
 	// this note currently active, special color
 	if ((int)note == curNote) {
 	  switch(status) {
 	  case INSTRUCTIONS:
-	    colCurKey = colInstructionKey;
+	    sprite = WHITE_KEY_INSTRUCTION;
 	    break;
 	  case PLAYING_CORRECT:
-	    colCurKey = colCorrectKey;
+	    sprite = WHITE_KEY_CORRECT;
 	    break;
 	  case PLAYING_INCORRECT:
-	  case PLAYING_OVER:
-	    colCurKey = colIncorrectKey;
+	    sprite = WHITE_KEY_INCORRECT;
 	    break;
+	    // notes outside game or during feedback
 	  default:
-	    // debug
-	    colCurKey = ImColor(ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+	    sprite = WHITE_KEY_PLAY;
 	    break;
 	  }
 	}
-	draw_list->AddRectFilled(curPos, curPos + whiteKeySize, colCurKey);
-	// only advance between white keys, we should not have consecutive black keys
-	curPos.x += whiteKeySize.x + spacing.x;
+	drawKey(sprite, curPos, keySize, flip);
+	curPos.x += keySize.x;
       }
       note++;
     }
     // black on top
     curPos = startPos;
     note = rootKey;
-    for (uint i = 0; i < nbKeys; i++) { 
+    for (uint i = 0; i < nbKeys; i++) {
       // skip white keys, just advance
       if(isKeyWhite(note)) {
-	curPos.x += whiteKeySize.x + spacing.x;
+	curPos.x += keySize.x;
       }
       else {
-	// dimm key if not in scale and option set
+	// dim key if not in scale and option set
 	if (shallNotPass && !scale[note % 12]) {
-	  colCurKey = colBlackKeyDimmed;
+	  sprite = BLACK_KEY_DIMMED;
 	}
 	else {
-	  colCurKey = colBlackKey;
+	  sprite = BLACK_KEY;
 	}
 	// this note currently active, special color
 	if ((int)note == curNote) {
 	  switch(status) {
 	  case INSTRUCTIONS:
-	    colCurKey = colInstructionKey;
+	    sprite = BLACK_KEY_INSTRUCTION;
 	    break;
 	  case PLAYING_CORRECT:
-	    colCurKey = colCorrectKey;
+	    sprite = BLACK_KEY_CORRECT;
 	    break;
 	  case PLAYING_INCORRECT:
-	  case PLAYING_OVER:
-	    colCurKey = colIncorrectKey;
+	    sprite = BLACK_KEY_INCORRECT;
 	    break;
+	    // notes outside game or during feedback
 	  default:
-	    // debug
-	    colCurKey = ImColor(ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+	    sprite = BLACK_KEY_PLAY;
 	    break;
 	  }
 	}
-	// for black key, first we have to draw the background for spacing
-	ImVec2 tmpPos = curPos;
-	tmpPos.x = curPos.x - spacing.x / 2 - blackKeySize.x / 2 - spacing.x;
-	ImVec2 tmpSize(blackKeySize.x + 2 * spacing.x, blackKeySize.y + spacing.y);
-	draw_list->AddRectFilled(tmpPos, tmpPos + blackBackgroundSize , colBackground);
-	tmpPos.x += spacing.x;
-	draw_list->AddRectFilled(tmpPos, tmpPos + blackKeySize, colCurKey);
+	// for black key, shift half to right to center between two white keys
+	drawKey(sprite, {curPos.x - keySize.x / 2, curPos.y}, keySize, flip);
       }
       note++;
     }
-  }
-
-  // toggles for scale
-  void drawScale(float scaleFactor) {
-    // FIXME: here manually adjusted values, compute compard to actual height
-    float spaceX = 5.0f * scaleFactor;
-    float whiteX = 38.0f * scaleFactor;
-    float blackX = 32.0f * scaleFactor;
-    float keyX;
-    // manually shift element to scale properly
-    float posX = spaceX;
-    // temp variables for colors
-    ImU32 colKey;
-    ImU32 colActive;
-    ImU32 colText;
-    for (int i = 0; i < 12; i++) {
-      ImGui::PushID(i);
-      if (i > 0) {
-	ImGui::SameLine(posX);
-      }
-      // as with a piano keyboard, here as well mimic black/white keys
-      if(isKeyWhite(i)) {
-	if (scale[i]) {
-	  colKey = colWhiteKey;
-	  colActive = colWhiteKeyDimmed;
-	}
-	else {
-	  colKey = colWhiteKeyDimmed;
-	  colActive = colWhiteKey;
-	}
-	colText = colBlackKey;
-	keyX = whiteX;
-      }
-      else {
-	if (scale[i]) {
-	  colKey = colBlackKey;
-	  colActive = colBlackKeyDimmed;
-	}
-	else {
-	  colKey = colBlackKeyDimmed;
-	  colActive = colBlackKey;
-	}
-	colText = colWhiteKey;
-	keyX = blackX;
-      }
-      ImGui::PushStyleColor(ImGuiCol_Button, colKey);
-      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colKey);
-      ImGui::PushStyleColor(ImGuiCol_ButtonActive, colActive);
-      ImGui::PushStyleColor(ImGuiCol_Text, colText);
-
-      if (ImGui::Button(scaleNotes[i], ImVec2(keyX, 0))) {
-	setParameterValue(kScaleC + i, !scale[i]);
-      }
-
-      posX += keyX + spaceX;
-      ImGui::PopStyleColor(4);
-      ImGui::PopID();
-    }
-    ImGui::SameLine();
-    ImGui::Text("Scale");
   }
   
   DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimonPianoUI)
@@ -487,7 +736,8 @@ UI* createUI()
 {
     return new SimonPianoUI();
 }
-
+ 
 // --------------------------------------------------------------------------------------------------------------------
 
 END_NAMESPACE_DISTRHO
+ 
