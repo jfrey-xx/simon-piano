@@ -1,6 +1,10 @@
  
 Simon game, with MIDI input (to connect to a keyboard or other instrument) and MIDI output (to offload sound generation). As a standalone or audio plugin thanks to [DPF](https://github.com/DISTRHO/DPF/).
 
+Can be used online (PWA-enabled): https://jfrey-xx.github.io/simon-piano/simon-piano.html -- on mobile pairs nicely with MIDI BLE devices, e.g. on Android through [MIDI BLE Connect](https://play.google.com/store/apps/details?id=com.mobileer.example.midibtlepairing).
+
+![screenshot](docs/screenshot.png "Screenshot")
+
 # Notes
 
 During instructions defaults to first MIDI channel and full velocity, while playing keep those variables intact.
