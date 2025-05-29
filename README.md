@@ -15,7 +15,7 @@ Tested on Linux x64 (Ubuntu 24.04) with GLES2 and GL33, MacOS intel (10.15) with
 
 - install emsdk (tested with 4.0.6 running on Ubuntu 24.04)
 - `emsdk activate`
-- `source "/locatin/to/emsdk/emsdk_env.sh"`
+- `source "/location/to/emsdk/emsdk_env.sh"`
 - `CXX=em++ CC=emcc make`
 
 # TODO
