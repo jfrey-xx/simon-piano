@@ -1,6 +1,10 @@
 
 name: Deploy web
-on: [push]
+
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -17,8 +21,6 @@ jobs:
           ssh-key: ${{ secrets.SSH_KEY }}
           ssh-strict: false
           persist-credentials: true
-      - name: Verify repo
-        run: ls -R
       # using fork to setub emsdk
       - name: Setup emsdk (use cache if found, create otherwise)
         uses: agriyakhetarpal/setup-emsdk@update-to-cache-v4
@@ -26,8 +28,6 @@ jobs:
           version: 4.0.6
           # cache folder, placed in the build directory,
           actions-cache-folder: 'emsdk-cache'
-      - name: Verify emsdk
-        run: emcc -v
       - name: Build
         shell: bash
         run: |
