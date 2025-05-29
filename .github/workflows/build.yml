@@ -27,7 +27,7 @@ jobs:
   macos:
     strategy:
       matrix:
-        target: [macos-intel]
+        target: [macos-intel, macos-universal]
     runs-on: macos-13
     steps:
       - name: ssh host keys
