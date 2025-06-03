@@ -5,16 +5,7 @@
 #
 
 # select opengl version, go for max compatibility, make it visible for all spawned make (especially dgl)
-
-# HOTFIX: need to know about MAC now to set proper opengl version
-ifneq ($(MACOS),true)
-TARGET_MACHINE := $(shell $(CC) -dumpmachine)
-ifneq (,$(findstring apple,$(TARGET_MACHINE)))
-MACOS = true
-endif
-endif # MACOS
-
-# USE_GLES2 and USE_OPENGL3 tested working on macos and linux
+# USE_GLES2 and USE_OPENGL3 tested working on macos, linux and (cross-compiled) windows
 USE_GLES2=true
 export USE_GLES2
 
