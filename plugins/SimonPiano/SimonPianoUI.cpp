@@ -63,7 +63,7 @@ public:
       The UI should be initialized to a default state that matches the plugin side.
     */
 
-  SimonPianoUI() : RayUI(UI_REFRESH_RATE, TEXTURE_FILTER_POINT)
+  SimonPianoUI() : RayUI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT, UI_REFRESH_RATE, TEXTURE_FILTER_POINT)
     {
       String resourcesLocation = getResourcesLocation();
       d_stdout("resources location: %s", resourcesLocation.buffer());
