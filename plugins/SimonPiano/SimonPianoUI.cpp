@@ -111,6 +111,7 @@ public:
     // Texture unloading
     UnloadTexture(piano);
     UnloadRenderTexture(texturePiano);
+    UnloadRenderTexture(canvasPiano);
     // unload model (including meshes) and animations
     UnloadModelAnimations(modelAnimations, animsCount);
     UnloadModel(model);
